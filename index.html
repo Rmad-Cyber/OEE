@@ -72,14 +72,19 @@
     const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec";
 
     // 🧩 Fungsi login/logout
-    async function loginWithGoogle() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      const { user } = await auth.signInWithPopup(provider);
-      const idToken = await user.getIdToken(true);
-      localStorage.setItem('idToken', idToken);
-      renderUI();
-      console.log('Login:', user.email);
-    }
+  async function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const result = await firebase.auth().signInWithPopup(provider);
+    const user = result.user;
+    if (!user) return alert("Login gagal!");
+
+    const idToken = await user.getIdToken(true);
+    localStorage.setItem("idToken", idToken);
+    console.log("✅ Token disimpan:", idToken.slice(0, 20) + "...");
+
+    renderUI();
+}
+
 
     async function logout() {
       await auth.signOut();
@@ -108,13 +113,19 @@
 
     // 🔗 Tes koneksi ke Apps Script
     async function testWhoAmI() {
-      const token = localStorage.getItem('idToken');
+      const user = firebase.auth().currentUser;
+      if (!user) return alert("Belum login!");
+      const token = await user.getIdToken(true); // refresh token tiap kali
+      console.log("🔑 Token dikirim:", token.slice(0, 20) + "...");
+
       const res = await fetch(`${WEBAPP_URL}?action=whoami`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      document.getElementById('out').textContent = JSON.stringify(data, null, 2);
-    }
+    console.log("📡 Response:", data);
+    document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+}
+
   </script>
 </body>
 </html>
