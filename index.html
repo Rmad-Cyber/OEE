@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Losses App</title>
+  <meta name="theme-color" content="#2563eb">
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f9fafb; color: #111;
+    }
+    header {
+      background: #2563eb; color: white; padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    button {
+      background: #2563eb; color: white;
+      border: none; border-radius: 6px;
+      padding: 8px 14px; cursor: pointer;
+    }
+    button:hover { background: #1e40af; }
+    main { padding: 20px; }
+    pre {
+      background: #f1f5f9; padding: 10px; border-radius: 8px;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    #app, #guest { display: none; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h3>Losses Time App</h3>
+    <div id="userBox">
+      <span id="whoami"></span>
+      <button id="logoutBtn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="guest">
+      <h2>Masuk untuk melanjutkan</h2>
+      <button onclick="loginWithGoogle()">Login dengan Google</button>
+    </section>
+
+    <section id="app">
+      <h2>Selamat datang!</h2>
+      <p>Login berhasil ✅</p>
+      <button onclick="testWhoAmI()">Tes koneksi backend</button>
+      <pre id="out"></pre>
+    </section>
+  </main>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script>
+    // 🔧 Ganti dengan konfigurasi Firebase kamu
+    const firebaseConfig = {
+      apiKey: "MASUKKAN_API_KEY_KAMU",
+      authDomain: "MASUKKAN_AUTH_DOMAIN.firebaseapp.com",
+      projectId: "MASUKKAN_PROJECT_ID",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const WEBAPP_URL = "PASTE_URL_WEB_APP_SCRIPT_KAMU";
+
+    // 🧩 Fungsi login/logout
+    async function loginWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      const { user } = await auth.signInWithPopup(provider);
+      const idToken = await user.getIdToken(true);
+      localStorage.setItem('idToken', idToken);
+      renderUI();
+      console.log('Login:', user.email);
+    }
+
+    async function logout() {
+      await auth.signOut();
+      localStorage.removeItem('idToken');
+      renderUI();
+    }
+
+    async function cacheIdToken() {
+      const user = auth.currentUser; if (!user) return;
+      const token = await user.getIdToken(true);
+      localStorage.setItem('idToken', token);
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) await cacheIdToken();
+      renderUI();
+    });
+
+    function renderUI() {
+      const user = auth.currentUser;
+      const signedIn = !!user;
+      document.getElementById('guest').style.display = signedIn ? 'none' : 'block';
+      document.getElementById('app').style.display   = signedIn ? 'block' : 'none';
+      document.getElementById('whoami').textContent  = signedIn ? user.email : '';
+    }
+
+    // 🔗 Tes koneksi ke Apps Script
+    async function testWhoAmI() {
+      const token = localStorage.getItem('idToken');
+      const res = await fetch(`${WEBAPP_URL}?action=whoami`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      document.getElementById('out').textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
