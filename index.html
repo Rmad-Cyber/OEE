@@ -2,66 +2,115 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Losses App</title>
   <meta name="theme-color" content="#2563eb">
-  <link rel="manifest" href="manifest.json">
-
   <style>
-    body {
-      font-family: system-ui, Arial, sans-serif;
-      margin: 0; padding: 0;
-      background: #f9fafb; color: #111;
-    }
-    header {
-      background: #2563eb; color: white; padding: 10px 16px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    button {
-      background: #2563eb; color: white;
-      border: none; border-radius: 6px;
-      padding: 8px 14px; cursor: pointer;
-    }
-    button:hover { background: #1e40af; }
-    main { padding: 20px; }
-    pre {
-      background: #f1f5f9; padding: 10px; border-radius: 8px;
-      white-space: pre-wrap; word-break: break-word;
-    }
-    #app, #guest { display: none; }
+    body{font-family:system-ui,Arial,sans-serif;margin:0;background:#f6f7fb;color:#0f172a}
+    header{background:#2563eb;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    nav button,button{background:#2563eb;color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+    nav button{background:#1f66ff}
+    button:hover{filter:brightness(0.95)}
+    main{padding:20px}
+    .card{background:#f1f5f9;border-radius:10px;padding:12px}
+    [data-page]{display:none}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e5e7eb;text-align:left}
+    thead th{background:#2563eb;color:#fff;position:sticky;top:0}
+    label{display:grid;gap:6px}
+    input,select,textarea{padding:8px;border:1px solid #cbd5e1;border-radius:8px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   </style>
 </head>
-
 <body>
   <header>
-    <h3>Losses Time App</h3>
-    <div id="userBox">
+    <div style="display:flex;gap:10px;align-items:center;">
+      <strong>Losses App</strong>
+      <nav>
+        <button onclick="goto('#/losses/new')">Input Losses</button>
+        <button onclick="goto('#/losses/history')">History</button>
+      </nav>
+    </div>
+    <div>
       <span id="whoami"></span>
-      <button id="logoutBtn" onclick="logout()">Logout</button>
+      <button id="loginBtn" onclick="loginWithGoogle()">Login</button>
+      <button id="logoutBtn" onclick="logout()" style="display:none;">Logout</button>
     </div>
   </header>
 
   <main>
-    <section id="guest">
-      <h2>Masuk untuk melanjutkan</h2>
-      <button onclick="loginWithGoogle()">Login dengan Google</button>
+    <!-- LANDING -->
+    <section id="page-home" data-page class="card">
+      <h2>Selamat datang!</h2>
+      <p>Silakan login lalu pilih menu di atas.</p>
+      <button onclick="testWhoAmI()">Tes koneksi backend</button>
+      <pre id="out" class="card" style="margin-top:10px;white-space:pre-wrap"></pre>
     </section>
 
-    <section id="app">
-      <h2>Selamat datang!</h2>
-      <p>Login berhasil ✅</p>
-      <button onclick="testWhoAmI()">Tes koneksi backend</button>
-      <pre id="out"></pre>
+    <!-- PAGE: /#/losses/new -->
+    <section id="page-losses-new" data-page>
+      <h2>Input Losses</h2>
+      <form id="lossesForm" onsubmit="return submitLosses(event)" style="display:grid;gap:12px;max-width:560px;">
+        <label>Tanggal <input type="date" id="fTanggal" required></label>
+        <label>Shift
+          <select id="fShift" required><option value="">- pilih -</option><option>1</option><option>2</option><option>3</option></select>
+        </label>
+        <label>Mesin <input id="fMesin" placeholder="MC-01" required></label>
+        <label>Kategori
+          <select id="fKategori" required>
+            <option value="">- pilih -</option>
+            <option>Breakdown</option>
+            <option>Minor Stop</option>
+            <option>Planned Stop</option>
+            <option>Material</option>
+            <option>Quality</option>
+          </select>
+        </label>
+        <label>Issue <textarea id="fIssue" rows="2" required></textarea></label>
+        <div class="row2">
+          <label>WAKTU START <input type="time" id="fStart" required></label>
+          <label>WAKTU FINISH <input type="time" id="fFinish" required></label>
+        </div>
+        <label>Durasi Hilang (menit) — opsional
+          <input type="number" id="fDurasi" min="0" placeholder="boleh kosong; dihitung di sheet">
+        </label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button type="submit">Simpan</button>
+          <span id="statusMsg"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- PAGE: /#/losses/history -->
+    <section id="page-losses-history" data-page>
+      <h2>History Losses</h2>
+      <div style="margin-bottom:1rem; display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="date" id="fSince"/>
+        <input type="text" id="fSearch" placeholder="Cari issue/mesin/kategori..."/>
+        <button onclick="loadLosses(true)">🔍 Cari</button>
+      </div>
+      <div class="card" style="overflow:auto;max-height:70vh">
+        <table id="lossesTable">
+          <thead><tr>
+            <th>Tanggal</th><th>Shift</th><th>Mesin</th>
+            <th>Kategori</th><th>Issue</th>
+            <th>Waktu Start</th><th>Waktu Finish</th><th>Durasi</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="text-align:center;margin-top:10px;">
+        <button id="loadMoreBtn" onclick="loadLosses()">Load more</button>
+      </div>
     </section>
   </main>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
   <script>
-    // 🔧 Ganti dengan konfigurasi Firebase kamu
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    // GANTI dengan config Firebase-mu
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
   const firebaseConfig = {
     apiKey: "AIzaSyBXZzlGWEICRgxBp5RUO78E7Jp2nwvpDsg",
     authDomain: "ciiapps.firebaseapp.com",
@@ -70,278 +119,187 @@
     messagingSenderId: "1033692640361",
     appId: "1:1033692640361:web:6e69e8ed3cd2c7ef249ef8",
     measurementId: "G-ZCG384P9G7"
-};
-
+  };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+
+    // GANTI dengan URL Web App Apps Script (/exec)
     const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec";
-
-    // 🧩 Fungsi login/logout
-  async function loginWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const { user } = await firebase.auth().signInWithPopup(provider);
-    if (!user) return alert("Login gagal");
-    const idToken = await user.getIdToken(true);              // token baru
-    localStorage.setItem('idToken', idToken);
-    console.log('✅ Login sebagai:', user.email);
-    renderUI();
-  }
-
-
-    async function logout() {
-      await auth.signOut();
-      localStorage.removeItem('idToken');
-      renderUI();
-    }
-
-    async function cacheIdToken() {
-      const user = auth.currentUser; if (!user) return;
-      const token = await user.getIdToken(true);
-      localStorage.setItem('idToken', token);
-    }
-
-    auth.onAuthStateChanged(async (user) => {
-      if (user) await cacheIdToken();
-      renderUI();
-    });
-
-    function renderUI() {
-      const user = auth.currentUser;
-      const signedIn = !!user;
-      document.getElementById('guest').style.display = signedIn ? 'none' : 'block';
-      document.getElementById('app').style.display   = signedIn ? 'block' : 'none';
-      document.getElementById('whoami').textContent  = signedIn ? user.email : '';
-    }
-
-    // 🔗 Tes koneksi ke Apps Script
-async function testWhoAmI() {
-  const user = firebase.auth().currentUser;
-  if (!user) return alert("Belum login!");
-
-  const token = await user.getIdToken(true);
-  const res = await fetch(`${WEBAPP_URL}?action=whoami&token=${encodeURIComponent(token)}`);
-  const data = await res.json();
-
-  document.getElementById("out").textContent = JSON.stringify(data, null, 2);
-}
-
-
   </script>
 
-  <!-- ====== ROUTER: tampilkan halaman berdasar hash ====== -->
-<script>
-  const routes = {
-    '#/losses/new': 'page-losses-new',
-  };
-  function showRoute() {
-    // sembunyikan semua
-    document.querySelectorAll('[data-page]').forEach(s => s.style.display = 'none');
-    // tentukan route
-    const hash = location.hash || '#/losses/new';
-    const id = routes[hash] || 'page-losses-new';
-    // butuh login dulu
-    if (!firebase.auth().currentUser) { location.hash = ''; return; }
-    document.getElementById(id).style.display = 'block';
-  }
-  window.addEventListener('hashchange', showRoute);
-  // pastikan terpanggil setelah login
-  auth.onAuthStateChanged(() => { if (firebase.auth().currentUser) { location.hash = '#/losses/new'; showRoute(); }});
-</script>
-
-<!-- ========================================================================= PAGE: /#/losses/new =============================================================================== -->
-<section id="page-losses-new" data-page style="display:none; padding:16px;">
-  <h2>Input Losses</h2>
-  <form id="lossesForm" onsubmit="return submitLosses(event)" style="display:grid; gap:12px; max-width:560px;">
-    <label> Tanggal
-      <input type="date" id="fTanggal" required />
-    </label>
-    <label> Shift
-      <select id="fShift" required>
-        <option value="">- pilih -</option>
-        <option>1</option><option>2</option><option>3</option>
-      </select>
-    </label>
-    <label> Mesin
-      <input type="text" id="fMesin" placeholder="MC-01" required />
-    </label>
-    <label> Kategori
-      <!-- pakai dropdown manual sesuai sheet kamu -->
-      <select id="fKategori" required>
-        <option value="">- pilih -</option>
-        <option>Breakdown</option>
-        <option>Minor Stop</option>
-        <option>Planned Stop</option>
-        <option>Material</option>
-        <option>Quality</option>
-      </select>
-    </label>
-    <label> Issue
-      <textarea id="fIssue" rows="2" placeholder="Deskripsi singkat" required></textarea>
-    </label>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <label> WAKTU START
-        <input type="time" id="fStart" required />
-      </label>
-      <label> WAKTU FINISH
-        <input type="time" id="fFinish" required />
-      </label>
-    </div>
-    <label> Durasi Hilang (menit) — opsional
-      <input type="number" id="fDurasi" min="0" placeholder="otomatis dihitung di sheet boleh kosong" />
-    </label>
-    <!-- Factory & Line boleh dikosongkan: sheet kamu sudah lookup dari Mesin.
-         Kalau mau isi manual, buka komentar 2 input ini. -->
-    <!--
-    <label> Factory <input type="text" id="fFactory" /></label>
-    <label> Line    <input type="text" id="fLine" /></label>
-    -->
-
-    <div style="display:flex; gap:10px; align-items:center;">
-      <button type="submit">Simpan</button>
-      <span id="statusMsg"></span>
-    </div>
-  </form>
-</section>
-
-<script>
-  // helper format (YYYY-MM-DD → biarkan apa adanya; time → HH:MM)
-  function val(id){ return document.getElementById(id).value?.trim(); }
-
-  async function submitLosses(ev){
-    ev.preventDefault();
-    const user = firebase.auth().currentUser;
-    if (!user) { alert('Belum login'); return; }
-
-    // ambil nilai form
-    const payload = [{
-      // kolom persis sesuai header Sheet
-      "Tanggal":       val('fTanggal'),
-      "Shift":         val('fShift'),
-      "Factory":       "",                // kosongkan → biar Sheet lookup dari Mesin
-      "Line":          "",                // kosongkan → biar Sheet lookup dari Mesin
-      "Mesin":         val('fMesin'),
-      "Issue":         val('fIssue'),
-      "Kategori":      val('fKategori'),
-      "WAKTU START":   val('fStart'),
-      "WAKTU FINISH":  val('fFinish'),
-      "Durasi Hilang": val('fDurasi') ? Number(val('fDurasi')) : "" // boleh kosong
-      // "Pelapor" dikosongkan → backend isi email login
-      // "ID/lastUpdated/version" diisi backend
-    }];
-
-    // validasi minimal
-    if (!payload[0]["Tanggal"] || !payload[0]["Mesin"] || !payload[0]["Shift"] || !payload[0]["Kategori"] || !payload[0]["WAKTU START"] || !payload[0]["WAKTU FINISH"]) {
-      alert('Mohon lengkapi semua field wajib.'); return;
+  <script>
+    // ======= AUTH UI =======
+    function renderAuth() {
+      const u = auth.currentUser;
+      document.getElementById('whoami').textContent = u ? u.email : '';
+      document.getElementById('loginBtn').style.display  = u ? 'none' : 'inline-block';
+      document.getElementById('logoutBtn').style.display = u ? 'inline-block' : 'none';
+      showRoute();
     }
+    async function loginWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      await auth.signInWithPopup(provider);
+      renderAuth();
+    }
+    async function logout() { await auth.signOut(); renderAuth(); }
 
-    // ambil token & kirim POST text/plain (anti-preflight)
-    const token = await user.getIdToken(true);
-    const res = await fetch(`${WEBAPP_URL}?action=create_losses`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ token, data: payload })
+    // ======= ROUTER =======
+    const routes = {
+      '#/losses/new': 'page-losses-new',
+      '#/losses/history': 'page-losses-history',
+    };
+    function goto(hash){ location.hash = hash; showRoute(); }
+    function showRoute(){
+      document.querySelectorAll('[data-page]').forEach(s => s.style.display='none');
+      const u = auth.currentUser;
+      if(!u){ document.getElementById('page-home').style.display='block'; return; }
+      const id = routes[location.hash] || 'page-losses-new';
+      document.getElementById(id).style.display='block';
+    }
+    window.addEventListener('hashchange', showRoute);
+    auth.onAuthStateChanged(u => {
+      renderAuth();
+      if (u && !location.hash) { location.hash = '#/losses/new'; showRoute(); }
     });
 
-    const data = await res.json();
-    const msgEl = document.getElementById('statusMsg');
-    if (data.ok) {
-      msgEl.textContent = '✅ Tersimpan';
-      // reset form ringan
-      document.getElementById('lossesForm').reset();
-    } else {
-      msgEl.textContent = '❌ Gagal: ' + (data.error || 'Unknown error');
-      console.error('Create error:', data);
+    // ======= TEST WHOAMI =======
+    async function testWhoAmI() {
+      const u = auth.currentUser; if (!u) return alert('Belum login!');
+      const token = await u.getIdToken(true);
+      const res = await fetch(`${WEBAPP_URL}?action=whoami&token=${encodeURIComponent(token)}`);
+      const data = await res.json();
+      document.getElementById('out').textContent = JSON.stringify(data, null, 2);
     }
+
+  let currentRole = 'guest';
+  async function fetchWhoAmI() {
+    const u = auth.currentUser; if (!u) return;
+    const token = await u.getIdToken(true);
+    const res = await fetch(`${WEBAPP_URL}?action=whoami&token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    currentRole = data.role || 'guest';
+    renderAuth();
   }
-</script>
 
-  <!-- ========================================================================= PAGE: /#/losses/history ================================================================= -->
-<section id="page-losses-history" data-page style="display:none; padding:16px;">
-  <h2>History Losses</h2>
-
-  <div style="margin-bottom:1rem; display:flex; gap:8px; flex-wrap:wrap;">
-    <input type="date" id="fSince" />
-    <input type="text" id="fSearch" placeholder="Cari issue/mesin/kategori..." />
-    <button onclick="loadLosses(true)">🔍 Cari</button>
-  </div>
-
-  <div id="lossesTableBox" style="overflow:auto; max-height:70vh; border:1px solid #ddd;">
-    <table id="lossesTable" border="1" cellspacing="0" style="width:100%; border-collapse:collapse;">
-      <thead style="background:#2563eb; color:white;">
-        <tr>
-          <th>Tanggal</th><th>Shift</th><th>Mesin</th>
-          <th>Kategori</th><th>Issue</th><th>Waktu Start</th><th>Waktu Finish</th><th>Durasi</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div style="margin-top:1rem; text-align:center;">
-    <button id="loadMoreBtn" onclick="loadLosses()">Load more</button>
-  </div>
-</section>
-
-<script>
-let page = 1, loading = false, lastQuery = {};
-
-// Router update
-routes['#/losses/history'] = 'page-losses-history';
-
-// Load losses
-async function loadLosses(reset=false){
-  if(loading) return;
-  loading = true;
-  const user = firebase.auth().currentUser;
-  if(!user){ alert('Belum login'); return; }
-
-  if(reset){ page = 1; document.querySelector('#lossesTable tbody').innerHTML=''; }
-
-  const token = await user.getIdToken(true);
-  const since = document.getElementById('fSince').value;
-  const q = document.getElementById('fSearch').value.trim();
-  const params = new URLSearchParams({
-    action: 'list_losses',
-    token,
-    page,
-    pageSize: 100,
-    q,
-    since
+  // panggil setelah login
+  auth.onAuthStateChanged(async (u) => {
+    if (u) {
+      await fetchWhoAmI();
+      if (!location.hash) location.hash = '#/losses/new';
+      showRoute();
+    } else {
+      currentRole = 'guest';
+      renderAuth(); showRoute();
+    }
   });
 
-  const res = await fetch(`${WEBAPP_URL}?${params.toString()}`);
-  const data = await res.json();
-
-  if(data.ok){
-    renderLossRows(data.items || []);
-    page++;
-    document.getElementById('loadMoreBtn').style.display =
-      (data.items.length >= 100) ? 'inline-block' : 'none';
-  }else{
-    alert('Error: '+data.error);
+  // guard halaman berdasarkan role
+  function roleGte(have, need) {
+    const order = ['guest','operator','supervisor','admin'];
+    return order.indexOf(have) >= order.indexOf(need);
   }
-  loading = false;
-}
 
-function renderLossRows(rows){
-  const tbody = document.querySelector('#lossesTable tbody');
-  rows.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${r['Tanggal']||''}</td>
-      <td>${r['Shift']||''}</td>
-      <td>${r['Mesin']||''}</td>
-      <td>${r['Kategori']||''}</td>
-      <td>${r['Issue']||''}</td>
-      <td>${r['WAKTU START']||''}</td>
-      <td>${r['WAKTU FINISH']||''}</td>
-      <td>${r['Durasi Hilang']||''}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-</script>
+  function showRoute(){
+    document.querySelectorAll('[data-page]').forEach(s => s.style.display='none');
+    const u = auth.currentUser;
+    if (!u) { document.getElementById('page-home').style.display='block'; return; }
 
-  
+    // cegah guest buka pages
+    const target = routes[location.hash] || 'page-losses-new';
+
+    // contoh: losses/new & history minimal operator
+    const need = (target === 'page-losses-new' || target === 'page-losses-history') ? 'operator' : 'guest';
+    if (!roleGte(currentRole, need)) {
+      document.getElementById('page-home').style.display='block';
+      document.getElementById('out').textContent = 'Akses ditolak. Hubungi admin untuk didaftarkan.';
+      return;
+    }
+    document.getElementById(target).style.display='block';
+  }
+
+  // sebelum submit/list, cek role
+  async function submitLosses(ev){
+    ev.preventDefault();
+    if (!roleGte(currentRole,'operator')) { alert('Akses ditolak'); return; }
+    // ... (lanjutan fungsi aslinya tetap sama)
+  }
+  async function loadLosses(reset=false){
+    if (!roleGte(currentRole,'operator')) { alert('Akses ditolak'); return; }
+    // ... (lanjutan fungsi aslinya tetap sama)
+  }
+
+
+    
+
+    // ======= FORM SUBMIT =======
+    function val(id){ return document.getElementById(id).value?.trim(); }
+    async function submitLosses(ev){
+      ev.preventDefault();
+      const u = auth.currentUser; if(!u) return alert('Belum login!');
+      const payload = [{
+        "Tanggal":       val('fTanggal'),
+        "Shift":         val('fShift'),
+        "Factory":       "",
+        "Line":          "",
+        "Mesin":         val('fMesin'),
+        "Issue":         val('fIssue'),
+        "Kategori":      val('fKategori'),
+        "WAKTU START":   val('fStart'),
+        "WAKTU FINISH":  val('fFinish'),
+        "Durasi Hilang": val('fDurasi') ? Number(val('fDurasi')) : ""
+      }];
+      const token = await u.getIdToken(true);
+      const res = await fetch(`${WEBAPP_URL}?action=create_losses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' }, // simple request → no preflight
+        body: JSON.stringify({ token, data: payload })
+      });
+      const data = await res.json();
+      document.getElementById('statusMsg').textContent = data.ok ? '✅ Tersimpan' : ('❌ Gagal: ' + (data.error || 'Unknown'));
+      if (data.ok) document.getElementById('lossesForm').reset();
+    }
+
+    // ======= HISTORY (pagination) =======
+    let page = 1, loading = false;
+    async function loadLosses(reset=false){
+      if (loading) return; loading = true;
+      const u = auth.currentUser; if(!u) return alert('Belum login!');
+      if (reset){ page=1; document.querySelector('#lossesTable tbody').innerHTML=''; }
+      const token = await u.getIdToken(true);
+      const since = document.getElementById('fSince').value;
+      const q = document.getElementById('fSearch').value.trim();
+      const params = new URLSearchParams({ action:'list_losses', token, page, pageSize:100, q, since });
+      const res = await fetch(`${WEBAPP_URL}?${params.toString()}`);
+      const data = await res.json();
+      if (data.ok) {
+        renderLossRows(data.items || []);
+        page++;
+        document.getElementById('loadMoreBtn').style.display = (data.items && data.items.length >= 100) ? 'inline-block' : 'none';
+      } else {
+        alert('Error: ' + (data.error||'Unknown'));
+      }
+      loading = false;
+    }
+    function renderLossRows(rows){
+      const tbody = document.querySelector('#lossesTable tbody');
+      rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r['Tanggal']||''}</td>
+          <td>${r['Shift']||''}</td>
+          <td>${r['Mesin']||''}</td>
+          <td>${r['Kategori']||''}</td>
+          <td>${r['Issue']||''}</td>
+          <td>${r['WAKTU START']||''}</td>
+          <td>${r['WAKTU FINISH']||''}</td>
+          <td>${r['Durasi Hilang']||''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // initial render
+    window.addEventListener('load', renderAuth);
+  </script>
 </body>
 </html>
