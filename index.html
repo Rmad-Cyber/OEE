@@ -118,21 +118,13 @@ async function testWhoAmI() {
   const user = firebase.auth().currentUser;
   if (!user) return alert("Belum login!");
 
-  // ambil token login dari Firebase
   const token = await user.getIdToken(true);
-
-  // kirim token via query string (bukan header)
-  const url = `${WEBAPP_URL}?action=whoami&token=${encodeURIComponent(token)}`;
-  console.log("🔗 Memanggil:", url);
-
-  // fetch sederhana tanpa header Authorization (anti-CORS)
-  const res = await fetch(url);
+  const res = await fetch(`${WEBAPP_URL}?action=whoami&token=${encodeURIComponent(token)}`);
   const data = await res.json();
 
-  // tampilkan hasil di layar
-  document.getElementById('out').textContent = JSON.stringify(data, null, 2);
-  console.log("📡 Response:", data);
+  document.getElementById("out").textContent = JSON.stringify(data, null, 2);
 }
+
 
   </script>
 </body>
