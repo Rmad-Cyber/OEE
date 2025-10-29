@@ -127,5 +127,221 @@ async function testWhoAmI() {
 
 
   </script>
+
+  <!-- ====== ROUTER: tampilkan halaman berdasar hash ====== -->
+<script>
+  const routes = {
+    '#/losses/new': 'page-losses-new',
+  };
+  function showRoute() {
+    // sembunyikan semua
+    document.querySelectorAll('[data-page]').forEach(s => s.style.display = 'none');
+    // tentukan route
+    const hash = location.hash || '#/losses/new';
+    const id = routes[hash] || 'page-losses-new';
+    // butuh login dulu
+    if (!firebase.auth().currentUser) { location.hash = ''; return; }
+    document.getElementById(id).style.display = 'block';
+  }
+  window.addEventListener('hashchange', showRoute);
+  // pastikan terpanggil setelah login
+  auth.onAuthStateChanged(() => { if (firebase.auth().currentUser) { location.hash = '#/losses/new'; showRoute(); }});
+</script>
+
+<!-- ========================================================================= PAGE: /#/losses/new =============================================================================== -->
+<section id="page-losses-new" data-page style="display:none; padding:16px;">
+  <h2>Input Losses</h2>
+  <form id="lossesForm" onsubmit="return submitLosses(event)" style="display:grid; gap:12px; max-width:560px;">
+    <label> Tanggal
+      <input type="date" id="fTanggal" required />
+    </label>
+    <label> Shift
+      <select id="fShift" required>
+        <option value="">- pilih -</option>
+        <option>1</option><option>2</option><option>3</option>
+      </select>
+    </label>
+    <label> Mesin
+      <input type="text" id="fMesin" placeholder="MC-01" required />
+    </label>
+    <label> Kategori
+      <!-- pakai dropdown manual sesuai sheet kamu -->
+      <select id="fKategori" required>
+        <option value="">- pilih -</option>
+        <option>Breakdown</option>
+        <option>Minor Stop</option>
+        <option>Planned Stop</option>
+        <option>Material</option>
+        <option>Quality</option>
+      </select>
+    </label>
+    <label> Issue
+      <textarea id="fIssue" rows="2" placeholder="Deskripsi singkat" required></textarea>
+    </label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <label> WAKTU START
+        <input type="time" id="fStart" required />
+      </label>
+      <label> WAKTU FINISH
+        <input type="time" id="fFinish" required />
+      </label>
+    </div>
+    <label> Durasi Hilang (menit) — opsional
+      <input type="number" id="fDurasi" min="0" placeholder="otomatis dihitung di sheet boleh kosong" />
+    </label>
+    <!-- Factory & Line boleh dikosongkan: sheet kamu sudah lookup dari Mesin.
+         Kalau mau isi manual, buka komentar 2 input ini. -->
+    <!--
+    <label> Factory <input type="text" id="fFactory" /></label>
+    <label> Line    <input type="text" id="fLine" /></label>
+    -->
+
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button type="submit">Simpan</button>
+      <span id="statusMsg"></span>
+    </div>
+  </form>
+</section>
+
+<script>
+  // helper format (YYYY-MM-DD → biarkan apa adanya; time → HH:MM)
+  function val(id){ return document.getElementById(id).value?.trim(); }
+
+  async function submitLosses(ev){
+    ev.preventDefault();
+    const user = firebase.auth().currentUser;
+    if (!user) { alert('Belum login'); return; }
+
+    // ambil nilai form
+    const payload = [{
+      // kolom persis sesuai header Sheet
+      "Tanggal":       val('fTanggal'),
+      "Shift":         val('fShift'),
+      "Factory":       "",                // kosongkan → biar Sheet lookup dari Mesin
+      "Line":          "",                // kosongkan → biar Sheet lookup dari Mesin
+      "Mesin":         val('fMesin'),
+      "Issue":         val('fIssue'),
+      "Kategori":      val('fKategori'),
+      "WAKTU START":   val('fStart'),
+      "WAKTU FINISH":  val('fFinish'),
+      "Durasi Hilang": val('fDurasi') ? Number(val('fDurasi')) : "" // boleh kosong
+      // "Pelapor" dikosongkan → backend isi email login
+      // "ID/lastUpdated/version" diisi backend
+    }];
+
+    // validasi minimal
+    if (!payload[0]["Tanggal"] || !payload[0]["Mesin"] || !payload[0]["Shift"] || !payload[0]["Kategori"] || !payload[0]["WAKTU START"] || !payload[0]["WAKTU FINISH"]) {
+      alert('Mohon lengkapi semua field wajib.'); return;
+    }
+
+    // ambil token & kirim POST text/plain (anti-preflight)
+    const token = await user.getIdToken(true);
+    const res = await fetch(`${WEBAPP_URL}?action=create_losses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ token, data: payload })
+    });
+
+    const data = await res.json();
+    const msgEl = document.getElementById('statusMsg');
+    if (data.ok) {
+      msgEl.textContent = '✅ Tersimpan';
+      // reset form ringan
+      document.getElementById('lossesForm').reset();
+    } else {
+      msgEl.textContent = '❌ Gagal: ' + (data.error || 'Unknown error');
+      console.error('Create error:', data);
+    }
+  }
+</script>
+
+  <!-- ========================================================================= PAGE: /#/losses/history ================================================================= -->
+<section id="page-losses-history" data-page style="display:none; padding:16px;">
+  <h2>History Losses</h2>
+
+  <div style="margin-bottom:1rem; display:flex; gap:8px; flex-wrap:wrap;">
+    <input type="date" id="fSince" />
+    <input type="text" id="fSearch" placeholder="Cari issue/mesin/kategori..." />
+    <button onclick="loadLosses(true)">🔍 Cari</button>
+  </div>
+
+  <div id="lossesTableBox" style="overflow:auto; max-height:70vh; border:1px solid #ddd;">
+    <table id="lossesTable" border="1" cellspacing="0" style="width:100%; border-collapse:collapse;">
+      <thead style="background:#2563eb; color:white;">
+        <tr>
+          <th>Tanggal</th><th>Shift</th><th>Mesin</th>
+          <th>Kategori</th><th>Issue</th><th>Waktu Start</th><th>Waktu Finish</th><th>Durasi</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:1rem; text-align:center;">
+    <button id="loadMoreBtn" onclick="loadLosses()">Load more</button>
+  </div>
+</section>
+
+<script>
+let page = 1, loading = false, lastQuery = {};
+
+// Router update
+routes['#/losses/history'] = 'page-losses-history';
+
+// Load losses
+async function loadLosses(reset=false){
+  if(loading) return;
+  loading = true;
+  const user = firebase.auth().currentUser;
+  if(!user){ alert('Belum login'); return; }
+
+  if(reset){ page = 1; document.querySelector('#lossesTable tbody').innerHTML=''; }
+
+  const token = await user.getIdToken(true);
+  const since = document.getElementById('fSince').value;
+  const q = document.getElementById('fSearch').value.trim();
+  const params = new URLSearchParams({
+    action: 'list_losses',
+    token,
+    page,
+    pageSize: 100,
+    q,
+    since
+  });
+
+  const res = await fetch(`${WEBAPP_URL}?${params.toString()}`);
+  const data = await res.json();
+
+  if(data.ok){
+    renderLossRows(data.items || []);
+    page++;
+    document.getElementById('loadMoreBtn').style.display =
+      (data.items.length >= 100) ? 'inline-block' : 'none';
+  }else{
+    alert('Error: '+data.error);
+  }
+  loading = false;
+}
+
+function renderLossRows(rows){
+  const tbody = document.querySelector('#lossesTable tbody');
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r['Tanggal']||''}</td>
+      <td>${r['Shift']||''}</td>
+      <td>${r['Mesin']||''}</td>
+      <td>${r['Kategori']||''}</td>
+      <td>${r['Issue']||''}</td>
+      <td>${r['WAKTU START']||''}</td>
+      <td>${r['WAKTU FINISH']||''}</td>
+      <td>${r['Durasi Hilang']||''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+</script>
+
+  
 </body>
 </html>
