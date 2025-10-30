@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Losses App · Internal</title>
+  <meta name="theme-color" content="#2563eb" />
+  <style>
+    body{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Inter",Arial,sans-serif;
+      margin:0;
+      background:#f6f7fb;
+      color:#0f172a
+    }
+    header{
+      background:#2563eb;
+      color:#fff;
+      padding:10px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap
+    }
+    nav{display:flex;gap:8px;flex-wrap:wrap}
+    nav button,button{
+      background:#1f66ff;
+      color:#fff;
+      border:0;
+      border-radius:10px;
+      padding:8px 14px;
+      font-size:.9rem;
+      cursor:pointer
+    }
+    button:hover{filter:brightness(.95)}
+    main{padding:16px}
+    .card{
+      background:#f1f5f9;
+      border-radius:10px;
+      padding:12px;
+      margin-bottom:16px
+    }
+    [data-page]{display:none}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.8rem
+    }
+    th,td{
+      padding:8px;
+      border-bottom:1px solid #e5e7eb;
+      text-align:left;
+      vertical-align:top
+    }
+    thead th{
+      background:#2563eb;
+      color:#fff;
+      position:sticky;
+      top:0;
+      font-weight:500
+    }
+    label{display:grid;gap:6px;font-size:.9rem}
+    input,select,textarea{
+      padding:8px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      font-size:.9rem
+    }
+    .row2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px
+    }
+    #out{
+      font-size:.8rem;
+      white-space:pre-wrap;
+      word-break:break-word
+    }
+    #statusMsg{font-size:.8rem}
+    #loadMoreBtn{background:#2563eb}
+    @media(min-width:768px){
+      main{padding:24px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;flex-direction:column;min-width:0;">
+      <strong style="font-size:1rem;line-height:1.2rem;">Losses App (Internal)</strong>
+      <small id="userInfo" style="font-size:.7rem;opacity:.8;"></small>
+    </div>
+    <nav>
+      <button onclick="goto('#/losses/new')">Input Losses</button>
+      <button onclick="goto('#/losses/history')">History</button>
+      <button onclick="doLogout()">Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- PAGE HOME -->
+    <section id="page-home" data-page class="card">
+      <h2 style="margin-top:0;">Status Koneksi</h2>
+      <p>Gunakan tombol ini untuk memastikan koneksi backend & role masih valid.</p>
+      <button onclick="testWhoAmI()">Tes koneksi backend</button>
+      <pre id="out" class="card" style="white-space:pre-wrap;"></pre>
+    </section>
+
+    <!-- PAGE INPUT LOSSES -->
+    <section id="page-losses-new" data-page class="card">
+      <h2 style="margin-top:0;">Input Losses</h2>
+      <form id="lossesForm" onsubmit="return submitLosses(event)" style="display:grid;gap:12px;max-width:480px;">
+        <label>Tanggal
+          <input type="date" id="fTanggal" required>
+        </label>
+
+        <label>Shift
+          <select id="fShift" required>
+            <option value="">- pilih -</option>
+            <option>1</option><option>2</option><option>3</option>
+          </select>
+        </label>
+
+        <label>Mesin
+          <input id="fMesin" placeholder="MC-01" required>
+        </label>
+
+        <label>Kategori
+          <select id="fKategori" required>
+            <option value="">- pilih -</option>
+            <option>Breakdown</option>
+            <option>Minor Stop</option>
+            <option>Planned Stop</option>
+            <option>Material</option>
+            <option>Quality</option>
+          </select>
+        </label>
+
+        <label>Issue
+          <textarea id="fIssue" rows="2" placeholder="Deskripsi singkat" required></textarea>
+        </label>
+
+        <div class="row2">
+          <label>WAKTU START
+            <input type="time" id="fStart" required>
+          </label>
+          <label>WAKTU FINISH
+            <input type="time" id="fFinish" required>
+          </label>
+        </div>
+
+        <label>Durasi Hilang (menit) — opsional
+          <input type="number" id="fDurasi" min="0" placeholder="boleh kosong; dihitung di sheet">
+        </label>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button type="submit" style="background:#2563eb;">Simpan</button>
+          <span id="statusMsg"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- PAGE HISTORY -->
+    <section id="page-losses-history" data-page class="card">
+      <h2 style="margin-top:0;">History Losses</h2>
+
+      <div style="margin-bottom:1rem;display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="date" id="fSince"/>
+        <input type="text" id="fSearch" placeholder="Cari issue/mesin/kategori..." />
+        <button onclick="loadLosses(true)" style="background:#2563eb;">🔍 Cari</button>
+      </div>
+
+      <div class="card" style="max-height:60vh;overflow:auto;">
+        <table id="lossesTable">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Shift</th>
+              <th>Mesin</th>
+              <th>Kategori</th>
+              <th>Issue</th>
+              <th>Mulai</th>
+              <th>Selesai</th>
+              <th>Menit</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div style="text-align:center;margin-top:10px;">
+        <button id="loadMoreBtn" onclick="loadLosses()" style="background:#2563eb;">Load more</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script>
+    // ====== CONFIG ======
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXZzlGWEICRgxBp5RUO78E7Jp2nwvpDsg",
+      authDomain: "ciiapps.firebaseapp.com",
+      projectId: "ciiapps",
+      storageBucket: "ciiapps.firebasestorage.app",
+      messagingSenderId: "1033692640361",
+      appId: "1:1033692640361:web:6e69e8ed3cd2c7ef249ef8",
+      measurementId: "G-ZCG384P9G7"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec";
+
+    const MIN_ROLE_APP = ["operator","supervisor","admin"];
+    let page = 1;
+    let loading = false;
+    let currentRole = "guest";
+
+    // ====== GATE AWAL (LOCALSTORAGE) ======
+    (function startupGate(){
+      const role  = (localStorage.getItem("losses_role")  || "").toLowerCase();
+      const email =  localStorage.getItem("losses_email") || "";
+      currentRole = role || "guest";
+
+      const infoEl = document.getElementById("userInfo");
+      if (infoEl) infoEl.textContent = email ? (email + " · " + currentRole) : "";
+
+      if (MIN_ROLE_APP.indexOf(currentRole) === -1) {
+        window.location.href = "login.html";
+      }
+    })();
+
+    // ====== GATE KEDUA (REALTIME DARI BACKEND) ======
+    auth.onAuthStateChanged(async function(u){
+      if(!u){
+        window.location.href="login.html";
+        return;
+      }
+      const token = await u.getIdToken(true);
+      const res = await fetch(
+        WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token)
+      );
+      const data = await res.json();
+      currentRole = (data.role||"guest").toLowerCase();
+      if (MIN_ROLE_APP.indexOf(currentRole) === -1){
+        window.location.href="login.html";
+      }
+      const infoEl=document.getElementById("userInfo");
+      if(infoEl) infoEl.textContent = (data.email||"") + " · " + currentRole;
+    });
+
+    // ====== ROUTING ======
+    const routes = {
+      "#/losses/new": "page-losses-new",
+      "#/losses/history": "page-losses-history"
+    };
+    function goto(hash){
+      location.hash = hash;
+      showRoute();
+    }
+    function showRoute(){
+      document.querySelectorAll("[data-page]").forEach(s=>s.style.display="none");
+      const id = routes[location.hash] || "page-home";
+      const el = document.getElementById(id);
+      if(el) el.style.display="block";
+      if(id==="page-losses-history"){ loadLosses(true); }
+    }
+    window.addEventListener("hashchange", showRoute);
+    window.addEventListener("load", showRoute);
+
+    // ====== LOGOUT ======
+    async function doLogout(){
+      await auth.signOut();
+      localStorage.removeItem("losses_email");
+      localStorage.removeItem("losses_role");
+      window.location.href="login.html";
+    }
+
+    // ====== HELPERS ======
+    function val(id){
+      const x = document.getElementById(id);
+      return x && x.value ? x.value.trim() : "";
+    }
+
+    // ====== DEBUG WHOAMI ======
+    async function testWhoAmI(){
+      const u = auth.currentUser;
+      if(!u){ alert("Not signed in"); return; }
+      const token = await u.getIdToken(true);
+      const res = await fetch(
+        WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token)
+      );
+      const data = await res.json();
+      document.getElementById("out").textContent =
+        JSON.stringify(data,null,2);
+    }
+
+    // ====== SUBMIT LOSSES ======
+    async function submitLosses(ev){
+      ev.preventDefault();
+      if (MIN_ROLE_APP.indexOf(currentRole) === -1){
+        alert("Akses ditolak");
+        return;
+      }
+
+      const u = auth.currentUser;
+      if(!u){ alert("Not signed in"); return; }
+
+      const payload = [{
+        "Tanggal":       val("fTanggal"),
+        "Shift":         val("fShift"),
+        "Factory":       "",
+        "Line":          "",
+        "Mesin":         val("fMesin"),
+        "Issue":         val("fIssue"),
+        "Kategori":      val("fKategori"),
+        "WAKTU START":   val("fStart"),
+        "WAKTU FINISH":  val("fFinish"),
+        "Durasi Hilang": val("fDurasi") ? Number(val("fDurasi")) : ""
+      }];
+
+      const token = await u.getIdToken(true);
+      const res = await fetch(
+        WEBAPP_URL + "?action=create_losses",
+        {
+          method:"POST",
+          headers:{"Content-Type":"text/plain"},
+          body:JSON.stringify({ token: token, data: payload })
+        }
+      );
+      const data = await res.json();
+
+      document.getElementById("statusMsg").textContent =
+        data.ok
+          ? "✅ Tersimpan"
+          : ("❌ Gagal: " + (data.error||"Unknown"));
+
+      if(data.ok){
+        document.getElementById("lossesForm").reset();
+      }
+    }
+
+    // ====== LOAD HISTORY ======
+    async function loadLosses(reset){
+      if (typeof reset === "undefined"){ reset = false; }
+
+      if (MIN_ROLE_APP.indexOf(currentRole) === -1){
+        alert("Akses ditolak");
+        return;
+      }
+      if(loading) return;
+      loading=true;
+
+      const u = auth.currentUser;
+      if(!u){
+        alert("Not signed in");
+        loading=false;
+        return;
+      }
+
+      if(reset){
+        page=1;
+        const tbodyReset=document.querySelector("#lossesTable tbody");
+        if(tbodyReset) tbodyReset.innerHTML="";
+      }
+
+      const token = await u.getIdToken(true);
+      const since = document.getElementById("fSince").value;
+      const q     = document.getElementById("fSearch").value.trim();
+
+      const params = new URLSearchParams({
+        action:"list_losses",
+        token:token,
+        page:String(page),
+        pageSize:String(100),
+        q:q,
+        since:since
+      });
+
+      const res = await fetch(WEBAPP_URL + "?" + params.toString());
+      const data = await res.json();
+
+      if(data.ok){
+        renderLossRows(data.items||[]);
+        page++;
+        const lmb=document.getElementById("loadMoreBtn");
+        if(lmb){
+          lmb.style.display =
+            (data.items && data.items.length>=100)
+            ? "inline-block"
+            : "none";
+        }
+      } else {
+        alert("Error: " + (data.error||"Unknown"));
+      }
+      loading=false;
+    }
+
+    function renderLossRows(rows){
+      const tbody = document.querySelector("#lossesTable tbody");
+      if(!tbody) return;
+
+      rows.forEach(r=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML =
+            "<td>"+(r["Tanggal"]||"")+"</td>"
+          + "<td>"+(r["Shift"]||"")+"</td>"
+          + "<td>"+(r["Mesin"]||"")+"</td>"
+          + "<td>"+(r["Kategori"]||"")+"</td>"
+          + "<td>"+(r["Issue"]||"")+"</td>"
+          + "<td>"+(r["WAKTU START"]||"")+"</td>"
+          + "<td>"+(r["WAKTU FINISH"]||"")+"</td>"
+          + "<td>"+(r["Durasi Hilang"]||"")+"</td>";
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
