@@ -192,37 +192,61 @@
       }
     }
 
-    async function afterLoginCheck(user){
-      const token = await user.getIdToken(true);
-      const url = WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token);
-      const res = await fetch(url);
-      const data = await res.json();
 
-      if (!data.ok){
-        showStatus("Auth backend gagal: " + (data.error||"Unknown"), true);
-        return;
+async function afterLoginCheck(user){
+  const token = await user.getIdToken(true);
+  const url = WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token);
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (!data.ok){
+    showStatus("Auth backend gagal: " + (data.error||"Unknown"), true);
+    return;
+  }
+
+  // simpan email & role seperti biasa
+  localStorage.setItem("losses_email", (data.email || ""));
+  localStorage.setItem("losses_role", (data.role || "guest").toLowerCase());
+
+  // CEK ROLE
+  const allowedOrder = ["operator","supervisor","admin"];
+  const roleNow = (data.role || "guest").toLowerCase();
+  const canGoIn = allowedOrder.indexOf(roleNow) !== -1;
+  if (!canGoIn){
+    showStatus(
+      "Akses ditolak untuk akun:\n" +
+      (data.email || "(unknown)") +
+      "\nRole: " + data.role +
+      "\nHubungi admin untuk akses.",
+      true
+    );
+    return;
+  }
+
+  // === NEW: minta username personal jika belum ada ===
+  let uname = localStorage.getItem("losses_username");
+  if (!uname) {
+    uname = prompt("Masukkan nama Anda (Pelapor):");
+    if (uname) {
+      uname = uname.trim();
+      if (uname.length === 0) {
+        uname = null;
       }
-
-      // simpan role & email supaya app.html bisa ngecek
-      localStorage.setItem("losses_email", (data.email || ""));
-      localStorage.setItem("losses_role", (data.role || "guest").toLowerCase());
-
-      const allowedOrder = ["operator","supervisor","admin"];
-      const canGoIn = allowedOrder.indexOf((data.role||"guest").toLowerCase()) !== -1;
-      if (!canGoIn){
-        showStatus(
-          "Akses ditolak untuk akun:\n" +
-          (data.email || "(unknown)") +
-          "\nRole: " + data.role +
-          "\nHubungi admin untuk akses.",
-          true
-        );
-        return;
-      }
-
-      showStatus("Akses diberikan. Masuk...", false);
-      window.location.href = "app.html";
     }
+    if (!uname) {
+      // user cancel / kosong → kita stop, supaya jelas siapa pelapornya
+      showStatus("Nama Pelapor wajib diisi untuk lanjut.", true);
+      return;
+    }
+    localStorage.setItem("losses_username", uname);
+  }
+
+  // lanjut ke app
+  showStatus("Akses diberikan. Masuk...", false);
+  window.location.href = "app.html";
+}
+
+
 
     function showStatus(msg, isError){
       const box = document.getElementById("status");
