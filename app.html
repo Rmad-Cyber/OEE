@@ -228,14 +228,14 @@
       if (infoEl) infoEl.textContent = email ? (email + " · " + currentRole) : "";
 
       if (MIN_ROLE_APP.indexOf(currentRole) === -1) {
-        window.location.href = "login.html";
+        window.location.href = "index.html";
       }
     })();
 
     // ====== GATE KEDUA (REALTIME DARI BACKEND) ======
     auth.onAuthStateChanged(async function(u){
       if(!u){
-        window.location.href="login.html";
+        window.location.href="index.html";
         return;
       }
       const token = await u.getIdToken(true);
@@ -245,7 +245,7 @@
       const data = await res.json();
       currentRole = (data.role||"guest").toLowerCase();
       if (MIN_ROLE_APP.indexOf(currentRole) === -1){
-        window.location.href="login.html";
+        window.location.href="index.html";
       }
       const infoEl=document.getElementById("userInfo");
       if(infoEl) infoEl.textContent = (data.email||"") + " · " + currentRole;
@@ -275,7 +275,7 @@
       await auth.signOut();
       localStorage.removeItem("losses_email");
       localStorage.removeItem("losses_role");
-      window.location.href="login.html";
+      window.location.href="index.html";
     }
 
     // ====== HELPERS ======
