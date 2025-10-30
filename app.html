@@ -1,421 +1,684 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="h-full bg-gray-100">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Losses App · Internal</title>
-  <meta name="theme-color" content="#2563eb" />
-  <style>
-    body{
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Inter",Arial,sans-serif;
-      margin:0;
-      background:#f6f7fb;
-      color:#0f172a
-    }
-    header{
-      background:#2563eb;
-      color:#fff;
-      padding:10px 16px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap
-    }
-    nav{display:flex;gap:8px;flex-wrap:wrap}
-    nav button,button{
-      background:#1f66ff;
-      color:#fff;
-      border:0;
-      border-radius:10px;
-      padding:8px 14px;
-      font-size:.9rem;
-      cursor:pointer
-    }
-    button:hover{filter:brightness(.95)}
-    main{padding:16px}
-    .card{
-      background:#f1f5f9;
-      border-radius:10px;
-      padding:12px;
-      margin-bottom:16px
-    }
-    [data-page]{display:none}
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:.8rem
-    }
-    th,td{
-      padding:8px;
-      border-bottom:1px solid #e5e7eb;
-      text-align:left;
-      vertical-align:top
-    }
-    thead th{
-      background:#2563eb;
-      color:#fff;
-      position:sticky;
-      top:0;
-      font-weight:500
-    }
-    label{display:grid;gap:6px;font-size:.9rem}
-    input,select,textarea{
-      padding:8px;
-      border:1px solid #cbd5e1;
-      border-radius:8px;
-      font-size:.9rem
-    }
-    .row2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px
-    }
-    #out{
-      font-size:.8rem;
-      white-space:pre-wrap;
-      word-break:break-word
-    }
-    #statusMsg{font-size:.8rem}
-    #loadMoreBtn{background:#2563eb}
-    @media(min-width:768px){
-      main{padding:24px}
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor Pelacak Kerugian</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SDK Firebase (Diambil dari app.html) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <style>
+        /* Menyembunyikan scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Style untuk tombol sidebar aktif */
+        .sidebar-nav-button.active {
+            background-color: #1f2937; /* bg-gray-900 */
+            color: #ffffff; /* text-white */
+        }
+    </style>
 </head>
-<body>
-  <header>
-    <div style="display:flex;flex-direction:column;min-width:0;">
-      <strong style="font-size:1rem;line-height:1.2rem;">Losses App (Internal)</strong>
-      <small id="userInfo" style="font-size:.7rem;opacity:.8;"></small>
+<body class="h-full flex flex-col">
+
+    <!-- 
+        HEADER (Sticky Top)
+    -->
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Tombol Hamburger (Kiri) -->
+                <div class="flex-shrink-0">
+                    <button id="open-sidebar-button" class="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                        <span class="sr-only">Buka menu</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <!-- Judul (Tengah) -->
+                <div class="flex-grow flex justify-center">
+                    <h1 id="page-title" class="text-xl font-bold text-gray-900">Input Data</h1>
+                </div>
+                <!-- Spacer Kanan (untuk menyeimbangkan) -->
+                <div class="flex-shrink-0 w-8">
+                    <!-- Bisa diisi notifikasi nanti -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 
+        SIDEBAR NAV (Menu Samping)
+    -->
+    <!-- Overlay -->
+    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ease-linear"></div>
+
+    <!-- Konten Sidebar -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white z-50 flex flex-col transform -translate-x-full transition-transform duration-300 ease-in-out">
+        
+        <!-- Bagian User dan Profile -->
+        <div class="p-4 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <svg class="w-10 h-10 text-gray-400 rounded-full" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                </svg>
+                <div>
+                    <span id="sidebarUserName" class="font-medium text-lg">Loading...</span>
+                    <a href="#" id="sidebarUserEmail" class="block text-sm text-blue-400 hover:underline">email@loading.com</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigasi Utama Aplikasi -->
+        <nav class="flex-1 py-4 space-y-1 overflow-y-auto">
+            <button data-tab="input" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                <span>Input Data</span>
+            </button>
+            <button data-tab="dashboard" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7m-4 4v-4m-4 4v-4"></path></svg>
+                <span>Dasbor</span>
+            </button>
+            <button data-tab="log" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"></path></svg>
+                <span>Log Data</span>
+            </button>
+        </nav>
+
+        <!-- Tombol Logout (Paling Bawah) -->
+        <div class="p-4 border-t border-gray-700">
+            <button id="logout-button" class="w-full flex items-center px-4 py-3 rounded-md text-red-400 hover:bg-red-800 hover:text-white">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                <span>Log Out</span>
+            </button>
+        </div>
     </div>
-    <nav>
-      <button onclick="goto('#/losses/new')">Input Losses</button>
-      <button onclick="goto('#/losses/history')">History</button>
-      <button onclick="doLogout()">Logout</button>
-    </nav>
-  </header>
+    <!-- End Sidebar -->
 
-  <main>
-    <!-- PAGE HOME -->
-    <section id="page-home" data-page class="card">
-      <h2 style="margin-top:0;">Status Koneksi</h2>
-      <p>Gunakan tombol ini untuk memastikan koneksi backend & role masih valid.</p>
-      <button onclick="testWhoAmI()">Tes koneksi backend</button>
-      <pre id="out" class="card" style="white-space:pre-wrap;"></pre>
-    </section>
 
-    <!-- PAGE INPUT LOSSES -->
-    <section id="page-losses-new" data-page class="card">
-      <h2 style="margin-top:0;">Input Losses</h2>
-      <form id="lossesForm" onsubmit="return submitLosses(event)" style="display:grid;gap:12px;max-width:480px;">
-        <label>Tanggal
-          <input type="date" id="fTanggal" required>
-        </label>
+    <!-- Kontainer Utama -->
+    <div class="flex-1 overflow-y-auto">
+        <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+            
+            <!-- KONTEN TAB -->
+            <main>
+                <!-- Tab 1: Input Data -->
+                <div id="tab-input" class="tab-content">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Formulir Pencatatan Loss</h2>
+                        <!-- Formulir ini terhubung ke 'submitLosses' dari app.html -->
+                        <form id="loss-form" class="space-y-4">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="form-group">
+                                    <label for="fTanggal" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Kejadian</label>
+                                    <input type="date" id="fTanggal" name="date" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="fShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
+                                    <select id="fShift" name="shift" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                                        <option value="">- pilih -</option>
+                                        <option>1</option><option>2</option><option>3</option>
+                                    </select>
+                                </div>
+                            </div>
 
-        <label>Shift
-          <select id="fShift" required>
-            <option value="">- pilih -</option>
-            <option>1</option><option>2</option><option>3</option>
-          </select>
-        </label>
+                            <div class="form-group">
+                                <label for="fMesin" class="block text-sm font-medium text-gray-700 mb-1">Nama Mesin</label>
+                                 <input id="fMesin" name="machine" placeholder="Contoh: MC-01 atau Packing Line 1" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="fPelapor" class="block text-sm font-medium text-gray-700 mb-1">Pelapor</label>
+                                <input type="text" id="fPelapor" name="reporter" placeholder="Contoh: Budi (Operator)" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                            </div>
 
-        <label>Mesin
-          <input id="fMesin" placeholder="MC-01" required>
-        </label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="form-group">
+                                    <label for="fStart" class="block text-sm font-medium text-gray-700 mb-1">Waktu Mulai Berhenti</label>
+                                    <input type="time" id="fStart" name="time-start" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="fFinish" class="block text-sm font-medium text-gray-700 mb-1">Waktu Selesai Berhenti</label>
+                                    <input type="time" id="fFinish" name="time-end" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                                </div>
+                            </div>
 
-        <label>Kategori
-          <select id="fKategori" required>
-            <option value="">- pilih -</option>
-            <option>Breakdown</option>
-            <option>Minor Stop</option>
-            <option>Planned Stop</option>
-            <option>Material</option>
-            <option>Quality</option>
-          </select>
-        </label>
+                            <div class="form-group">
+                                <label for="fKategori" class="block text-sm font-medium text-gray-700 mb-1">Kategori (Six Big Losses)</label>
+                                <select id="fKategori" name="loss-category" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+                                    <option value="">-- Pilih Kategori Loss --</option>
+                                    <option value="Breakdown">Breakdown</option>
+                                    <option value="Minor Stop">Minor Stop</option>
+                                    <option value="Planned Stop">Planned Stop</option>
+                                    <option value="Material">Material</option>
+                                    <option value="Quality">Quality</option>
+                                    <option value="Reduced Speed">Reduced Speed</option>
+                                    <option value="Startup Losses">Startup Losses</option>
+                                </select>
+                            </div>
 
-        <label>Issue
-          <textarea id="fIssue" rows="2" placeholder="Deskripsi singkat" required></textarea>
-        </label>
+                            <div class="form-group">
+                                <label for="fIssue" class="block text-sm font-medium text-gray-700 mb-1">Alasan / Issue</label>
+                                <textarea id="fIssue" name="issue" rows="3" placeholder="Contoh: Sensor H-12 error, menunggu spare part..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            </div>
 
-        <div class="row2">
-          <label>WAKTU START
-            <input type="time" id="fStart" required>
-          </label>
-          <label>WAKTU FINISH
-            <input type="time" id="fFinish" required>
-          </label>
-        </div>
+                            <button type="submit" class="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                                Simpan Data Loss
+                            </button>
+                        </form>
+                    </div>
+                </div>
 
-        <label>Durasi Hilang (menit) — opsional
-          <input type="number" id="fDurasi" min="0" placeholder="boleh kosong; dihitung di sheet">
-        </label>
+                <!-- Tab 2: Dasbor -->
+                <div id="tab-dashboard" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Grafik Pareto -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg lg:col-span-2">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Analisis Pareto Kerugian</h3>
+                            <div class="h-64 md:h-96">
+                                <canvas id="pareto-chart"></canvas>
+                            </div>
+                        </div>
 
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <button type="submit" style="background:#2563eb;">Simpan</button>
-          <span id="statusMsg"></span>
-        </div>
-      </form>
-    </section>
+                        <!-- Grafik Tren -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg lg:col-span-2">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Tren Kerugian Harian (Dummy)</h3>
+                            <div class="h-64 md:h-96">
+                                <canvas id="trend-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- PAGE HISTORY -->
-    <section id="page-losses-history" data-page class="card">
-      <h2 style="margin-top:0;">History Losses</h2>
+                <!-- Tab 3: Log Data -->
+                <div id="tab-log" class="tab-content hidden">
+                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Log Data Kerugian</h2>
+                        
+                        <!-- Kontrol Filter -->
+                        <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <input type="date" id="fSince" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                            <input type="text" id="fSearch" placeholder="Cari issue/mesin..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                            <button id="search-button" class="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                🔍 Cari
+                            </button>
+                        </div>
+                        
+                        <!-- Tabel Log -->
+                        <div class="overflow-x-auto no-scrollbar">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesin</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mulai</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selesai</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Menit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="log-body" class="bg-white divide-y divide-gray-200">
+                                    <!-- Data akan ditambahkan di sini oleh JavaScript -->
+                                    <tr id="log-placeholder">
+                                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">Memuat data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Tombol Load More -->
+                        <div class="text-center mt-6">
+                            <button id="loadMoreBtn" class="py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                                Muat Lebih Banyak
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
 
-      <div style="margin-bottom:1rem;display:flex;gap:8px;flex-wrap:wrap;">
-        <input type="date" id="fSince"/>
-        <input type="text" id="fSearch" placeholder="Cari issue/mesin/kategori..." />
-        <button onclick="loadLosses(true)" style="background:#2563eb;">🔍 Cari</button>
-      </div>
+        </div> <!-- end max-w-7xl -->
+    </div> <!-- end flex-1 -->
 
-      <div class="card" style="max-height:60vh;overflow:auto;">
-        <table id="lossesTable">
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Shift</th>
-              <th>Mesin</th>
-              <th>Kategori</th>
-              <th>Issue</th>
-              <th>Mulai</th>
-              <th>Selesai</th>
-              <th>Menit</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
 
-      <div style="text-align:center;margin-top:10px;">
-        <button id="loadMoreBtn" onclick="loadLosses()" style="background:#2563eb;">Load more</button>
-      </div>
-    </section>
-  </main>
+    <!-- Pesan Sukses (Toast Notification) -->
+    <div id="toast-success" class="hidden fixed bottom-10 right-10 bg-green-500 text-white py-3 px-6 rounded-lg shadow-xl z-50 transition-transform translate-x-full">
+        Data berhasil disimpan!
+    </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <!-- Peringatan Error (Toast Notification) -->
+    <div id="toast-error" class="hidden fixed bottom-10 right-10 bg-red-500 text-white py-3 px-6 rounded-lg shadow-xl z-50 transition-transform translate-x-full">
+        Error: Gagal.
+    </div>
 
-  <script>
-    // ====== CONFIG ======
-    const firebaseConfig = {
-      apiKey: "AIzaSyBXZzlGWEICRgxBp5RUO78E7Jp2nwvpDsg",
-      authDomain: "ciiapps.firebaseapp.com",
-      projectId: "ciiapps",
-      storageBucket: "ciiapps.firebasestorage.app",
-      messagingSenderId: "1033692640361",
-      appId: "1:1033692640361:web:6e69e8ed3cd2c7ef249ef8",
-      measurementId: "G-ZCG384P9G7"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    
+    <script>
+        // --- STATE APLIKASI ---
+        let allLossData = []; // Data log mentah
+        let paretoChartInstance = null;
+        let trendChartInstance = null;
+        let page = 1;
+        let loading = false;
+        let currentRole = "guest";
+        
+        // --- Elemen DOM ---
+        const tabContents = document.querySelectorAll('.tab-content');
+        const openSidebarButton = document.getElementById('open-sidebar-button');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarNavButtons = document.querySelectorAll('.sidebar-nav-button');
+        const pageTitle = document.getElementById('page-title');
 
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec";
+        const lossForm = document.getElementById('loss-form');
+        const logBody = document.getElementById('log-body');
+        const logPlaceholder = document.getElementById('log-placeholder');
+        
+        const logoutButton = document.getElementById('logout-button');
+        const searchButton = document.getElementById('search-button');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
 
-    const MIN_ROLE_APP = ["operator","supervisor","admin"];
-    let page = 1;
-    let loading = false;
-    let currentRole = "guest";
+        const toastSuccess = document.getElementById('toast-success');
+        const toastError = document.getElementById('toast-error');
 
-    // ====== GATE AWAL (LOCALSTORAGE) ======
-    (function startupGate(){
-      const role  = (localStorage.getItem("losses_role")  || "").toLowerCase();
-      const email =  localStorage.getItem("losses_email") || "";
-      currentRole = role || "guest";
+        // === KONFIGURASI DARI app.html ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXZzlGWEICRgxBp5RUO78E7Jp2nwvpDsg", // Ganti dengan API Key Anda
+            authDomain: "ciiapps.firebaseapp.com",
+            projectId: "ciiapps",
+            storageBucket: "ciiapps.firebasestorage.app",
+            messagingSenderId: "1033692640361",
+            appId: "1:1033692640361:web:6e69e8ed3cd2c7ef249ef8",
+            measurementId: "G-ZCG384P9G7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
 
-      const infoEl = document.getElementById("userInfo");
-      if (infoEl) infoEl.textContent = email ? (email + " · " + currentRole) : "";
+        const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec"; // Ganti dengan URL Web App Anda
+        const MIN_ROLE_APP = ["operator","supervisor","admin"];
 
-      if (MIN_ROLE_APP.indexOf(currentRole) === -1) {
-        window.location.href = "index.html";
-      }
-    })();
+        // === FUNGSI LOGIKA (Kebanyakan dari app.html) ===
 
-    // ====== GATE KEDUA (REALTIME DARI BACKEND) ======
-    auth.onAuthStateChanged(async function(u){
-      if(!u){
-        window.location.href="index.html";
-        return;
-      }
-      const token = await u.getIdToken(true);
-      const res = await fetch(
-        WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token)
-      );
-      const data = await res.json();
-      currentRole = (data.role||"guest").toLowerCase();
-      if (MIN_ROLE_APP.indexOf(currentRole) === -1){
-        window.location.href="index.html";
-      }
-      const infoEl=document.getElementById("userInfo");
-      if(infoEl) infoEl.textContent = (data.email||"") + " · " + currentRole;
-    });
+        // ====== GATE AWAL (LOCALSTORAGE) ======
+        (function startupGate(){
+            const role  = (localStorage.getItem("losses_role")  || "").toLowerCase();
+            const email =  localStorage.getItem("losses_email") || "";
+            currentRole = role || "guest";
 
-    // ====== ROUTING ======
-    const routes = {
-      "#/losses/new": "page-losses-new",
-      "#/losses/history": "page-losses-history"
-    };
-    function goto(hash){
-      location.hash = hash;
-      showRoute();
-    }
-    function showRoute(){
-      document.querySelectorAll("[data-page]").forEach(s=>s.style.display="none");
-      const id = routes[location.hash] || "page-home";
-      const el = document.getElementById(id);
-      if(el) el.style.display="block";
-      if(id==="page-losses-history"){ loadLosses(true); }
-    }
-    window.addEventListener("hashchange", showRoute);
-    window.addEventListener("load", showRoute);
+            document.getElementById("sidebarUserName").textContent = email || "Guest";
+            document.getElementById("sidebarUserEmail").textContent = role ? (email + " · " + role) : "Silakan login";
 
-    // ====== LOGOUT ======
-    async function doLogout(){
-      await auth.signOut();
-      localStorage.removeItem("losses_email");
-      localStorage.removeItem("losses_role");
-      window.location.href="index.html";
-    }
+            if (MIN_ROLE_APP.indexOf(currentRole) === -1) {
+                // Jangan redirect dulu, tunggu auth.onAuthStateChanged
+                console.log("Peran localstorage tidak valid, menunggu verifikasi token...");
+            }
+        })();
 
-    // ====== HELPERS ======
-    function val(id){
-      const x = document.getElementById(id);
-      return x && x.value ? x.value.trim() : "";
-    }
+        // ====== GATE KEDUA (REALTIME DARI BACKEND) ======
+        auth.onAuthStateChanged(async function(u){
+            if(!u){
+                window.location.href="login.html"; // Asumsi ada login.html
+                return;
+            }
+            try {
+                const token = await u.getIdToken(true);
+                const res = await fetch(
+                    WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token)
+                );
+                const data = await res.json();
+                
+                if (!data.ok || !data.role) throw new Error(data.error || "Gagal mengambil data user");
 
-    // ====== DEBUG WHOAMI ======
-    async function testWhoAmI(){
-      const u = auth.currentUser;
-      if(!u){ alert("Not signed in"); return; }
-      const token = await u.getIdToken(true);
-      const res = await fetch(
-        WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token)
-      );
-      const data = await res.json();
-      document.getElementById("out").textContent =
-        JSON.stringify(data,null,2);
-    }
-
-    // ====== SUBMIT LOSSES ======
-    async function submitLosses(ev){
-      ev.preventDefault();
-      if (MIN_ROLE_APP.indexOf(currentRole) === -1){
-        alert("Akses ditolak");
-        return;
-      }
-
-      const u = auth.currentUser;
-      if(!u){ alert("Not signed in"); return; }
-
-      const payload = [{
-        "Tanggal":       val("fTanggal"),
-        "Shift":         val("fShift"),
-        "Factory":       "",
-        "Line":          "",
-        "Mesin":         val("fMesin"),
-        "Issue":         val("fIssue"),
-        "Kategori":      val("fKategori"),
-        "WAKTU START":   val("fStart"),
-        "WAKTU FINISH":  val("fFinish"),
-        "Durasi Hilang": val("fDurasi") ? Number(val("fDurasi")) : ""
-      }];
-
-      const token = await u.getIdToken(true);
-      const res = await fetch(
-        WEBAPP_URL + "?action=create_losses",
-        {
-          method:"POST",
-          headers:{"Content-Type":"text/plain"},
-          body:JSON.stringify({ token: token, data: payload })
+                currentRole = (data.role||"guest").toLowerCase();
+                if (MIN_ROLE_APP.indexOf(currentRole) === -1){
+                    alert("Akses ditolak untuk peran: " + currentRole);
+                    doLogout();
+                    return;
+                }
+                
+                document.getElementById("sidebarUserName").textContent = data.email || "User";
+                document.getElementById("sidebarUserEmail").textContent = (data.email||"") + " · " + currentRole;
+            
+            } catch (error) {
+                console.error("Error verifikasi token:", error);
+                showToast('error', 'Sesi Anda tidak valid. Silakan login kembali.');
+                setTimeout(doLogout, 2000);
+            }
+        });
+        
+        // ====== LOGOUT ======
+        async function doLogout(){
+            await auth.signOut();
+            localStorage.removeItem("losses_email");
+            localStorage.removeItem("losses_role");
+            window.location.href="login.html"; // Asumsi ada login.html
         }
-      );
-      const data = await res.json();
 
-      document.getElementById("statusMsg").textContent =
-        data.ok
-          ? "✅ Tersimpan"
-          : ("❌ Gagal: " + (data.error||"Unknown"));
-
-      if(data.ok){
-        document.getElementById("lossesForm").reset();
-      }
-    }
-
-    // ====== LOAD HISTORY ======
-    async function loadLosses(reset){
-      if (typeof reset === "undefined"){ reset = false; }
-
-      if (MIN_ROLE_APP.indexOf(currentRole) === -1){
-        alert("Akses ditolak");
-        return;
-      }
-      if(loading) return;
-      loading=true;
-
-      const u = auth.currentUser;
-      if(!u){
-        alert("Not signed in");
-        loading=false;
-        return;
-      }
-
-      if(reset){
-        page=1;
-        const tbodyReset=document.querySelector("#lossesTable tbody");
-        if(tbodyReset) tbodyReset.innerHTML="";
-      }
-
-      const token = await u.getIdToken(true);
-      const since = document.getElementById("fSince").value;
-      const q     = document.getElementById("fSearch").value.trim();
-
-      const params = new URLSearchParams({
-        action:"list_losses",
-        token:token,
-        page:String(page),
-        pageSize:String(100),
-        q:q,
-        since:since
-      });
-
-      const res = await fetch(WEBAPP_URL + "?" + params.toString());
-      const data = await res.json();
-
-      if(data.ok){
-        renderLossRows(data.items||[]);
-        page++;
-        const lmb=document.getElementById("loadMoreBtn");
-        if(lmb){
-          lmb.style.display =
-            (data.items && data.items.length>=100)
-            ? "inline-block"
-            : "none";
+        // ====== HELPERS ======
+        function val(id){
+            const x = document.getElementById(id);
+            return x && x.value ? x.value.trim() : "";
         }
-      } else {
-        alert("Error: " + (data.error||"Unknown"));
-      }
-      loading=false;
-    }
+        
+        function showToast(type, message) {
+            const toast = (type === 'success') ? toastSuccess : toastError;
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.remove('hidden', 'translate-x-full');
+            toast.classList.add('transform', 'translate-x-0');
 
-    function renderLossRows(rows){
-      const tbody = document.querySelector("#lossesTable tbody");
-      if(!tbody) return;
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0');
+                toast.classList.add('translate-x-full');
+                setTimeout(() => { toast.classList.add('hidden'); }, 300);
+            }, 3000);
+        }
 
-      rows.forEach(r=>{
-        const tr=document.createElement("tr");
-        tr.innerHTML =
-            "<td>"+(r["Tanggal"]||"")+"</td>"
-          + "<td>"+(r["Shift"]||"")+"</td>"
-          + "<td>"+(r["Mesin"]||"")+"</td>"
-          + "<td>"+(r["Kategori"]||"")+"</td>"
-          + "<td>"+(r["Issue"]||"")+"</td>"
-          + "<td>"+(r["WAKTU START"]||"")+"</td>"
-          + "<td>"+(r["WAKTU FINISH"]||"")+"</td>"
-          + "<td>"+(r["Durasi Hilang"]||"")+"</td>";
-        tbody.appendChild(tr);
-      });
-    }
-  </script>
+        // ====== FUNGSI NAVIGASI (Dari index.html) ======
+        function toggleSidebar() {
+            sidebarOverlay.classList.toggle('hidden');
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('-translate-x-full');
+            sidebar.classList.toggle('translate-x-0');
+        }
+
+        function switchTab(tabName) {
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            sidebarNavButtons.forEach(button => {
+                button.classList.remove('active', 'bg-gray-900', 'text-white');
+                button.classList.add('text-gray-300', 'hover:bg-gray-700');
+            });
+
+            const activeContent = document.getElementById(`tab-${tabName}`);
+            if (activeContent) {
+                activeContent.classList.remove('hidden');
+            }
+
+            const activeButton = document.querySelector(`.sidebar-nav-button[data-tab="${tabName}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active', 'bg-gray-900', 'text-white');
+                activeButton.classList.remove('text-gray-300', 'hover:bg-gray-700');
+                pageTitle.textContent = activeButton.querySelector('span').textContent;
+            }
+
+            // Muat data saat tab diaktifkan
+            if (tabName === 'log') {
+                loadLosses(true); // Selalu reset saat pindah ke tab log
+            } else if (tabName === 'dashboard') {
+                loadLosses(true); // Muat data terbaru untuk dasbor
+            }
+            
+            if (!sidebar.classList.contains('-translate-x-full')) {
+                toggleSidebar();
+            }
+        }
+
+        // ====== SUBMIT LOSSES (Gabungan app.html + index.html) ======
+        async function submitLosses(ev){
+            ev.preventDefault();
+            if (MIN_ROLE_APP.indexOf(currentRole) === -1){
+                showToast("error", "Akses ditolak. Peran Anda: " + currentRole);
+                return;
+            }
+
+            const u = auth.currentUser;
+            if(!u){ showToast("error", "Sesi berakhir. Silakan login ulang."); return; }
+
+            const payload = [{
+                "Tanggal":       val("fTanggal"),
+                "Shift":         val("fShift"),
+                "Factory":       "", // Bisa ditambahkan jika perlu
+                "Line":          "", // Bisa ditambahkan jika perlu
+                "Mesin":         val("fMesin"),
+                "Pelapor":       val("fPelapor"), // Bidang baru
+                "Issue":         val("fIssue"),
+                "Kategori":      val("fKategori"),
+                "WAKTU START":   val("fStart"),
+                "WAKTU FINISH":  val("fFinish"),
+                "Durasi Hilang": "" // Dihitung otomatis di backend
+            }];
+
+            const token = await u.getIdToken(true);
+            showToast('success', 'Menyimpan...'); // Feedback instan
+            
+            try {
+                const res = await fetch(
+                    WEBAPP_URL + "?action=create_losses",
+                    {
+                        method:"POST",
+                        headers:{"Content-Type":"text/plain"},
+                        body:JSON.stringify({ token: token, data: payload })
+                    }
+                );
+                const data = await res.json();
+
+                if(data.ok){
+                    showToast('success', '✅ Data berhasil disimpan!');
+                    document.getElementById("loss-form").reset();
+                    document.getElementById('fTanggal').valueAsDate = new Date(); // Set tanggal hari ini lagi
+                } else {
+                    throw new Error(data.error || "Unknown error");
+                }
+            } catch (error) {
+                showToast('error', `❌ Gagal: ${error.message}`);
+            }
+        }
+
+        // ====== LOAD HISTORY (Gabungan app.html + index.html) ======
+        async function loadLosses(reset = false){
+            if (MIN_ROLE_APP.indexOf(currentRole) === -1){
+                showToast("error", "Akses ditolak.");
+                return;
+            }
+            if(loading) return;
+            loading = true;
+
+            const u = auth.currentUser;
+            if(!u){
+                showToast("error", "Sesi berakhir.");
+                loading=false;
+                return;
+            }
+
+            if(reset){
+                page = 1;
+                allLossData = []; // Kosongkan data global
+                logBody.innerHTML = ''; // Kosongkan tabel
+                logPlaceholder.innerHTML = '<td colspan="8" class="px-6 py-4 text-center text-gray-500">Memuat data...</td>';
+                logPlaceholder.style.display = 'table-row';
+            }
+
+            const token = await u.getIdToken(true);
+            const since = val("fSince");
+            const q = val("fSearch");
+
+            const params = new URLSearchParams({
+                action:"list_losses",
+                token:token,
+                page:String(page),
+                pageSize:String(100),
+                q:q,
+                since:since
+            });
+
+            try {
+                const res = await fetch(WEBAPP_URL + "?" + params.toString());
+                const data = await res.json();
+
+                if(data.ok){
+                    const items = data.items || [];
+                    allLossData = allLossData.concat(items); // Tambahkan ke data global
+                    renderLossRows(items); // Render hanya data baru
+                    page++;
+                    
+                    loadMoreBtn.style.display = (items.length >= 100) ? "inline-block" : "none";
+                    
+                    if (allLossData.length === 0) {
+                         logPlaceholder.innerHTML = '<td colspan="8" class="px-6 py-4 text-center text-gray-500">Tidak ada data ditemukan.</td>';
+                    } else {
+                        logPlaceholder.style.display = 'none';
+                    }
+                    
+                    // Update dasbor setelah data dimuat
+                    if (reset) { // Hanya update dasbor saat reset
+                        updateAllCharts();
+                    }
+                    
+                } else {
+                    throw new Error(data.error || "Unknown error");
+                }
+            } catch (error) {
+                showToast("error", "Error: " + error.message);
+                logPlaceholder.innerHTML = `<td colspan="8" class="px-6 py-4 text-center text-red-500">Gagal memuat data: ${error.message}</td>`;
+            }
+            loading = false;
+        }
+
+        function renderLossRows(rows){
+            if (rows.length === 0 && page === 1) {
+                logPlaceholder.innerHTML = '<td colspan="8" class="px-6 py-4 text-center text-gray-500">Tidak ada data ditemukan.</td>';
+                logPlaceholder.style.display = 'table-row';
+                return;
+            }
+            
+            logPlaceholder.style.display = 'none';
+            const tbody = logBody;
+            if(!tbody) return;
+
+            rows.forEach(r=>{
+                const tr = document.createElement("tr");
+                tr.innerHTML =
+                    `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["Tanggal"]||"")}</td>`
+                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["Shift"]||"")}</td>`
+                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["Mesin"]||"")}</td>`
+                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["Kategori"]||"")}</td>`
+                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate" title="${r["Issue"]||""}">${(r["Issue"]||"")}</td>`
+                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["WAKTU START"]||"")}</td>`
+                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["WAKTU FINISH"]||"")}</td>`
+                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${(r["Durasi Hilang"]||"")}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        // ====== FUNGSI DASBOR (BARU, dari index.html) ======
+        function updateAllCharts() {
+            updateParetoChart();
+            updateTrendChart();
+        }
+
+        function updateParetoChart() {
+            const ctx = document.getElementById('pareto-chart').getContext('2d');
+            
+            // Agregasi data dari allLossData
+            const lossSummary = allLossData.reduce((acc, entry) => {
+                const category = entry["Kategori"] || "Lainnya";
+                const duration = Number(entry["Durasi Hilang"]) || 0;
+                
+                if (!acc[category]) { acc[category] = 0; }
+                acc[category] += duration;
+                return acc;
+            }, {});
+
+            // Sortir data dari terbesar ke terkecil
+            const sortedData = Object.entries(lossSummary).sort(([,a], [,b]) => b - a);
+            
+            const labels = sortedData.map(item => item[0]);
+            const data = sortedData.map(item => item[1]);
+
+            if (labels.length === 0) {
+                labels.push('Breakdown', 'Setup/Adjustment', 'Minor Stoppages');
+                data.push(120, 80, 60);
+            }
+
+            if (paretoChartInstance) { paretoChartInstance.destroy(); }
+
+            paretoChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Durasi Loss (Menit)',
+                        data: data,
+                        backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Total Menit Loss' } }, x: { title: { display: true, text: 'Kategori Kerugian' } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        function updateTrendChart() {
+            const ctx = document.getElementById('trend-chart').getContext('2d');
+            if (trendChartInstance) { trendChartInstance.destroy(); }
+            
+            // Data simulasi (bisa dikembangkan untuk agregasi harian dari allLossData)
+            const trendLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+            const trendData = [60, 45, 80, 50, 70, 30, 90]; 
+
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [{
+                        label: 'Total Loss (Menit)',
+                        data: trendData,
+                        fill: false,
+                        borderColor: 'rgb(59, 130, 246)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Total Menit' } } }
+                }
+            });
+        }
+
+        // --- EVENT LISTENERS (Gabungan) ---
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                document.getElementById('fTanggal').valueAsDate = new Date();
+                document.getElementById('fSince').valueAsDate = new Date();
+            } catch (e) { console.warn("Gagal set tanggal default."); }
+
+            lossForm.addEventListener('submit', submitLosses);
+            logoutButton.addEventListener('click', doLogout);
+            
+            searchButton.addEventListener('click', () => loadLosses(true));
+            loadMoreBtn.addEventListener('click', () => loadLosses(false));
+
+            openSidebarButton.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+
+            sidebarNavButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    switchTab(button.dataset.tab);
+                });
+            });
+
+            // Inisialisasi: tampilkan tab input pertama kali
+            sidebar.classList.add('hidden', '-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
+            sidebarOverlay.classList.add('hidden');
+            switchTab('input');
+        });
+
+    </script>
 </body>
 </html>
+
