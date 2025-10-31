@@ -6,15 +6,15 @@
   <title>Losses Tracker</title>
   <style>
     body {
-      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-      background:#f9fafb;
-      padding:16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9fafb;
+      padding: 16px;
     }
     header {
       background:#fff;
       border-radius:12px;
       padding:16px 20px;
-      box-shadow:0 8px 20px rgba(0,0,0,.06);
+      box-shadow:0 8px 20px rgba(0,0,0,0.06);
       margin-bottom:16px;
     }
     .row {
@@ -25,7 +25,9 @@
       color:#333;
       line-height:1.4;
     }
-    .row > div { min-width:140px; }
+    .row > div {
+      min-width:140px;
+    }
     .badge {
       display:inline-block;
       font-size:12px;
@@ -40,6 +42,8 @@
       font-weight:500;
       margin-top:8px;
     }
+
+    /* contoh tombol, form dsb. silakan lanjutkan sesuai style kamu */
     button {
       font-size:14px;
       padding:8px 12px;
@@ -54,19 +58,18 @@
       border:none;
       font-weight:600;
     }
-    button.primary:active { transform:scale(.98); }
+    button.primary:active {
+      transform:scale(.98);
+    }
+
     section.card {
       background:#fff;
       border-radius:12px;
-      box-shadow:0 8px 20px rgba(0,0,0,.06);
+      box-shadow:0 8px 20px rgba(0,0,0,0.06);
       padding:16px 20px;
       margin-bottom:16px;
     }
-    h2.card-title {
-      margin:0 0 12px 0;
-      font-size:16px;
-      font-weight:600;
-    }
+
     label {
       display:block;
       font-size:13px;
@@ -84,48 +87,33 @@
       font-size:14px;
       background:#fff;
     }
-    .flex-row {
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-    .flex-col {
-      flex:1;
-      min-width:120px;
-    }
-    .smallnote {
-      font-size:11px;
-      color:#666;
-      line-height:1.4;
-      margin-top:4px;
-    }
-    .readonly-box {
-      background:#f3f4f6;
-    }
-    .table-list > div {
-      border-bottom:1px solid #eee;
-      padding:8px 0;
-      font-size:13px;
-      line-height:1.4;
-    }
-    .table-list .meta {
-      color:#666;
-      font-size:12px;
-    }
   </style>
 </head>
 <body>
 
 <header>
   <div class="row">
-    <div><strong>User:</strong> <span id="hdrUser" class="badge">-</span></div>
-    <div><strong>Role:</strong> <span id="hdrRole" class="badge">-</span></div>
-    <div><strong>Email:</strong> <span id="hdrEmail" class="badge">-</span></div>
+    <div>
+      <strong>User:</strong>
+      <span id="hdrUser" class="badge">-</span>
+    </div>
+    <div>
+      <strong>Role:</strong>
+      <span id="hdrRole" class="badge">-</span>
+    </div>
+    <div>
+      <strong>Email:</strong>
+      <span id="hdrEmail" class="badge">-</span>
+    </div>
   </div>
 
   <div class="row">
-    <div><button id="btnSwitchUser">Ganti User</button></div>
-    <div><button id="btnLogout" class="danger-btn">Logout</button></div>
+    <div>
+      <button id="btnSwitchUser">Ganti User</button>
+    </div>
+    <div>
+      <button id="btnLogout" class="danger-btn">Logout</button>
+    </div>
   </div>
 
   <div id="accessWarn" class="danger" style="display:none;">
@@ -133,65 +121,40 @@
   </div>
 </header>
 
+
+<!--
+  SECTION INPUT DOWNTIME / LOSS EVENT
+  Kamu sudah punya form sebelumnya (line, shift, kategori, menit, dsb).
+  Di bawah ini skeleton-nya; lanjutkan/replace sesuai aslinya.
+-->
 <section class="card">
-  <h2 class="card-title">Input Loss Event</h2>
+  <h2 style="margin:0 0 12px 0;font-size:16px;font-weight:600;">Input Loss Event</h2>
 
-  <div class="flex-row">
-    <div class="flex-col">
-      <label>Line</label>
-      <input id="inpLine" placeholder="Line 1 / Area XYZ"/>
-    </div>
+  <label>Line / Mesin</label>
+  <input id="inpLine" placeholder="Line 1 / Mesin XYZ" />
 
-    <div class="flex-col">
-      <label>Mesin</label>
-      <select id="inpMesin"></select>
-      <div class="smallnote">List dari tabel mesin</div>
-    </div>
+  <label>Shift</label>
+  <select id="inpShift">
+    <option value="A">Shift A</option>
+    <option value="B">Shift B</option>
+    <option value="C">Shift C</option>
+  </select>
 
-    <div class="flex-col">
-      <label>Shift</label>
-      <select id="inpShift">
-        <option value="A">Shift A</option>
-        <option value="B">Shift B</option>
-        <option value="C">Shift C</option>
-      </select>
-    </div>
-  </div>
+  <label>Kategori Loss</label>
+  <select id="inpCategory">
+    <option value="No Material">No Material</option>
+    <option value="Breakdown Mesin">Breakdown Mesin</option>
+    <option value="Changeover / Setup">Changeover / Setup</option>
+    <option value="Quality / Rework">Quality / Rework</option>
+    <option value="Meeting / Briefing">Meeting / Briefing</option>
+    <option value="Lainnya">Lainnya</option>
+  </select>
 
-  <div class="flex-row">
-    <div class="flex-col">
-      <label>Waktu Start</label>
-      <input type="datetime-local" id="inpStart"/>
-    </div>
-    <div class="flex-col">
-      <label>Waktu Finish</label>
-      <input type="datetime-local" id="inpFinish"/>
-    </div>
-    <div class="flex-col">
-      <label>Durasi Hilang (menit)</label>
-      <input type="number" id="inpDurasi" min="0" step="1" placeholder="0" />
-      <div class="smallnote">Otomatis dihitung dari Start-Finish, tapi masih bisa di-edit manual kalau perlu koreksi.</div>
-    </div>
-  </div>
+  <label>Durasi Hilang (menit)</label>
+  <input type="number" id="inpDurasi" min="0" step="1" placeholder="ex: 12" />
 
-  <div class="flex-row">
-    <div class="flex-col">
-      <label>Kategori Loss</label>
-      <select id="inpCategory">
-        <option value="No Material">No Material</option>
-        <option value="Breakdown Mesin">Breakdown Mesin</option>
-        <option value="Changeover / Setup">Changeover / Setup</option>
-        <option value="Quality / Rework">Quality / Rework</option>
-        <option value="Meeting / Briefing">Meeting / Briefing</option>
-        <option value="Lainnya">Lainnya</option>
-      </select>
-    </div>
-
-    <div class="flex-col">
-      <label>Detail / Subcause</label>
-      <textarea id="inpIssue" rows="2" placeholder="contoh: Tidak ada outer panel tipe ABC"></textarea>
-    </div>
-  </div>
+  <label>Detail / Subcause</label>
+  <textarea id="inpIssue" rows="2" placeholder="contoh: Tidak ada outer panel untuk pintu tipe ABC"></textarea>
 
   <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
     <button class="primary" id="btnSubmitLoss">Submit Loss</button>
@@ -200,195 +163,191 @@
   <div id="submitMsg" class="danger" style="display:none;"></div>
 </section>
 
+
+<!--
+  SECTION LIST DATA
+  Kamu kemungkinan sudah punya tabel list losses.
+  Tinggal isi container ini pakai JS (fetch list_losses).
+-->
 <section class="card">
-  <h2 class="card-title">Data Terbaru</h2>
-  <div id="lossList" class="table-list">Loading...</div>
+  <h2 style="margin:0 0 12px 0;font-size:16px;font-weight:600;">Data Terbaru</h2>
+  <div id="lossList">Loading...</div>
 </section>
 
+
 <script>
-const BACKEND_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+  // ==========================
+  // CONFIG BACKEND
+  // ==========================
+  const BACKEND_URL = "PASTE_YOUR_WEB_APP_URL_HERE"; // sama seperti di index.html
+  // ==========================
 
-const lossesEmail    = localStorage.getItem("losses_email");
-const lossesUsername = localStorage.getItem("losses_username");
-const lossesRole     = localStorage.getItem("losses_role");
+  // ==========================
+  // SESSION GUARD
+  // ==========================
+  const lossesEmail    = localStorage.getItem("losses_email");
+  const lossesUsername = localStorage.getItem("losses_username");
+  const lossesRole     = localStorage.getItem("losses_role");
 
-if (!lossesEmail || !lossesUsername || !lossesRole) {
-  window.location.href = "index.html";
-}
-
-document.getElementById("hdrUser").textContent  = lossesUsername;
-document.getElementById("hdrRole").textContent  = lossesRole;
-document.getElementById("hdrEmail").textContent = lossesEmail;
-
-function roleAtLeast(need){
-  const order=["guest","operator","supervisor","admin"];
-  return order.indexOf(lossesRole)>=order.indexOf(need);
-}
-
-document.getElementById("btnLogout").addEventListener("click", () => {
-  localStorage.removeItem("losses_email");
-  localStorage.removeItem("losses_username");
-  localStorage.removeItem("losses_role");
-  window.location.href="index.html";
-});
-
-document.getElementById("btnSwitchUser").addEventListener("click", () => {
-  window.location.href="index.html";
-});
-
-// ===== Mesin dropdown =====
-async function loadMesinList(){
-  try{
-    const res=await fetch("machines.json");
-    const data=await res.json(); // ex: [ {"code":"MC-01","name":"Press HF"}, ... ]
-    const sel=document.getElementById("inpMesin");
-    sel.innerHTML="";
-    data.forEach(m=>{
-      const opt=document.createElement("option");
-      opt.value = m.name || m.code || "";
-      opt.textContent = m.name ? (m.code? m.code+" - "+m.name : m.name) : m.code;
-      sel.appendChild(opt);
-    });
-  }catch(err){
-    const sel=document.getElementById("inpMesin");
-    sel.innerHTML="<option value=''>[Error load mesin]</option>";
-  }
-}
-
-// ===== Durasi auto-calc =====
-function recalcDuration(){
-  const startVal=document.getElementById("inpStart").value;
-  const finishVal=document.getElementById("inpFinish").value;
-  if(!startVal || !finishVal) return;
-  const startTs=new Date(startVal).getTime();
-  const finishTs=new Date(finishVal).getTime();
-  if(isNaN(startTs)||isNaN(finishTs)) return;
-  const diffMs=finishTs-startTs;
-  if(diffMs<0) return;
-  const mins=Math.round(diffMs/60000);
-  const durEl=document.getElementById("inpDurasi");
-  if(durEl.value==="" || Number(durEl.value)===0){
-    durEl.value=mins;
-  }
-}
-document.getElementById("inpStart").addEventListener("change",recalcDuration);
-document.getElementById("inpFinish").addEventListener("change",recalcDuration);
-
-// ===== Submit Loss =====
-async function submitLoss(){
-  if(!roleAtLeast("operator")) {
-    showSubmitMsg("Role Anda tidak diizinkan membuat data (butuh operator).");
-    return;
+  if (!lossesEmail || !lossesUsername || !lossesRole) {
+    // Belum login lengkap -> tendang balik
+    window.location.href = "index.html";
   }
 
-  const lineVal   = document.getElementById("inpLine").value.trim();
-  const mesinVal  = document.getElementById("inpMesin").value.trim();
-  const shiftVal  = document.getElementById("inpShift").value;
-  const startVal  = document.getElementById("inpStart").value;
-  const finishVal = document.getElementById("inpFinish").value;
-  const durasiVal = document.getElementById("inpDurasi").value.trim();
-  const catVal    = document.getElementById("inpCategory").value;
-  const issueVal  = document.getElementById("inpIssue").value.trim();
+  // Tampilkan identitas di header
+  document.getElementById("hdrUser").textContent  = lossesUsername;
+  document.getElementById("hdrRole").textContent  = lossesRole;
+  document.getElementById("hdrEmail").textContent = lossesEmail;
 
-  if(!lineVal || !mesinVal || !shiftVal || !durasiVal || !catVal || !startVal || !finishVal){
-    showSubmitMsg("Field wajib belum lengkap.");
-    return;
+  // Role helpers
+  function roleAtLeast(need) {
+    const order = ["guest", "operator", "supervisor", "admin"];
+    return order.indexOf(lossesRole) >= order.indexOf(need);
   }
 
-  const payloadObj = {
-    "Line": lineVal,
-    "Mesin": mesinVal,
-    "Shift": shiftVal,
-    "WAKTU START": startVal,
-    "WAKTU FINISH": finishVal,
-    "Durasi Hilang": durasiVal,
-    "Kategori": catVal,
-    "Issue": issueVal,
-    "Pelapor": lossesUsername
-  };
+  // ==========================
+  // LOGOUT
+  // ==========================
+  document.getElementById("btnLogout").addEventListener("click", () => {
+    localStorage.removeItem("losses_email");
+    localStorage.removeItem("losses_username");
+    localStorage.removeItem("losses_role");
+    window.location.href = "index.html";
+  });
 
-  try{
-    const res=await fetch(BACKEND_URL+"?action=create_losses", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        email: lossesEmail,
-        username: lossesUsername,
-        role: lossesRole,
-        data: payloadObj
-      })
-    });
-    const json=await res.json();
-    if(!json.ok){
-      showSubmitMsg("Gagal submit: "+(json.error||"unknown"));
+  // ==========================
+  // GANTI USER
+  // ==========================
+  // Untuk sekarang: kita arahkan balik ke index.html biar pilih ulang username.
+  // (versi simpel, tidak ada prompt manual)
+  document.getElementById("btnSwitchUser").addEventListener("click", () => {
+    window.location.href = "index.html";
+  });
+
+  // ==========================
+  // SUBMIT LOSS EVENT
+  // ==========================
+  async function submitLoss() {
+    // minimum role untuk create_losses = "operator"
+    if (!roleAtLeast("operator")) {
+      showSubmitMsg("Role Anda tidak diizinkan membuat data (butuh operator).");
       return;
     }
-    showSubmitMsg("Berhasil disimpan ("+(json.inserted||1)+" row).",true);
-    await loadList();
-    document.getElementById("inpDurasi").value="";
-    document.getElementById("inpIssue").value="";
-  }catch(err){
-    showSubmitMsg("Error submit: "+err);
-  }
-}
-document.getElementById("btnSubmitLoss").addEventListener("click",submitLoss);
 
-function showSubmitMsg(msg,ok=false){
-  const box=document.getElementById("submitMsg");
-  box.style.display="block";
-  box.style.color= ok ? "#0a0" : "#c00";
-  box.textContent=msg;
-  setTimeout(()=>{ box.style.display="none"; },4000);
-}
+    const lineVal     = document.getElementById("inpLine").value.trim();
+    const shiftVal    = document.getElementById("inpShift").value;
+    const catVal      = document.getElementById("inpCategory").value;
+    const durasiVal   = document.getElementById("inpDurasi").value.trim();
+    const issueVal    = document.getElementById("inpIssue").value.trim();
 
-// ===== Load list =====
-async function loadList(){
-  if(!roleAtLeast("operator")) {
-    document.getElementById("accessWarn").style.display="block";
-    document.getElementById("lossList").textContent="Akses dibatasi.";
-    return;
-  }
-  try{
-    const res=await fetch(
-      BACKEND_URL+"?action=list_losses&page=1&pageSize=20"
-      +"&email="+encodeURIComponent(lossesEmail)
-      +"&username="+encodeURIComponent(lossesUsername)
-      +"&role="+encodeURIComponent(lossesRole)
-    );
-    const json=await res.json();
-    if(!json.ok){
-      document.getElementById("lossList").textContent="Gagal load data: "+(json.error||"");
+    if (!lineVal || !shiftVal || !catVal || !durasiVal) {
+      showSubmitMsg("Field wajib belum lengkap.");
       return;
     }
-    if(!json.items || !json.items.length){
-      document.getElementById("lossList").textContent="Belum ada data.";
+
+    // Bentuk payload sesuai header H di backend
+    const payloadObj = {
+      "Line": lineVal,
+      "Shift": shiftVal,
+      "Kategori": catVal,
+      "Durasi Hilang": durasiVal,
+      "Issue": issueVal,
+      "Pelapor": lossesUsername, // kita simpan username, bukan email
+      // kolom lain (Factory, Mesin, dsb.) bisa kamu isi di sini kalau form kamu punya
+    };
+
+    try {
+      const res = await fetch(BACKEND_URL + "?action=create_losses", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          data: payloadObj,
+          // NOTE:
+          // Versi sebelumnya backend minta "token" Firebase.
+          // Versi baru nanti kita ganti backend supaya terima email langsung?
+          // Di bawah ini sementara KOSONG karena backend final kita akan update.
+        })
+      });
+
+      const json = await res.json();
+      if (!json.ok) {
+        showSubmitMsg("Gagal submit: " + (json.error || "unknown"));
+        return;
+      }
+      showSubmitMsg("Berhasil disimpan (" + (json.inserted || 1) + " row).", true);
+      // refresh list
+      await loadList();
+      // clear form kecil
+      document.getElementById("inpDurasi").value = "";
+      document.getElementById("inpIssue").value = "";
+
+    } catch (err) {
+      showSubmitMsg("Error submit: " + err);
+    }
+  }
+
+  document.getElementById("btnSubmitLoss").addEventListener("click", submitLoss);
+
+  function showSubmitMsg(msg, ok=false){
+    const box = document.getElementById("submitMsg");
+    box.style.display = "block";
+    box.style.color = ok ? "#0a0" : "#c00";
+    box.textContent = msg;
+    setTimeout(()=>{ box.style.display="none"; }, 4000);
+  }
+
+  // ==========================
+  // LOAD LIST LOSSES
+  // ==========================
+  async function loadList() {
+    // minimum role untuk list_losses = "operator"
+    if (!roleAtLeast("operator")) {
+      document.getElementById("accessWarn").style.display = "block";
+      document.getElementById("lossList").textContent = "Akses dibatasi.";
       return;
     }
-    const htmlRows=json.items.map(it=>{
-      const line  = it["Line"]||"-";
-      const mesin = it["Mesin"]||"-";
-      const shft  = it["Shift"]||"-";
-      const cat   = it["Kategori"]||"-";
-      const mins  = it["Durasi Hilang"]||"-";
-      const who   = it["Pelapor"]||"-";
-      const when  = it["lastUpdated"]||"";
-      return `
-        <div>
-          <div><strong>${line}</strong> | ${mesin} | Shift ${shft} | ${cat}</div>
-          <div>Durasi: ${mins} menit | Pelapor: ${who}</div>
-          <div class="meta">Update: ${when}</div>
-        </div>
-      `;
-    }).join("");
-    document.getElementById("lossList").innerHTML=htmlRows;
-  }catch(err){
-    document.getElementById("lossList").textContent="Error load list: "+err;
-  }
-}
 
-// init
-loadMesinList();
-loadList();
+    try {
+      const res = await fetch(BACKEND_URL + "?action=list_losses&page=1&pageSize=20");
+      const json = await res.json();
+      if (!json.ok) {
+        document.getElementById("lossList").textContent = "Gagal load data: " + (json.error || "");
+        return;
+      }
+
+      if (!json.items || !json.items.length) {
+        document.getElementById("lossList").textContent = "Belum ada data.";
+        return;
+      }
+
+      // Render list sederhana
+      const htmlRows = json.items.map(it => {
+        const line  = it["Line"] || "-";
+        const shft  = it["Shift"] || "-";
+        const cat   = it["Kategori"] || "-";
+        const mins  = it["Durasi Hilang"] || "-";
+        const who   = it["Pelapor"] || "-";
+        const when  = it["lastUpdated"] || "";
+        return `
+          <div style="border-bottom:1px solid #eee;padding:8px 0;font-size:13px;line-height:1.4;">
+            <div><strong>${line}</strong> | Shift ${shft} | ${cat}</div>
+            <div>Durasi: ${mins} menit</div>
+            <div>Pelapor: ${who}</div>
+            <div style="color:#666;font-size:12px;">Update: ${when}</div>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("lossList").innerHTML = htmlRows;
+
+    } catch (err) {
+      document.getElementById("lossList").textContent = "Error load list: " + err;
+    }
+  }
+
+  // load awal
+  loadList();
 </script>
+
 </body>
 </html>
