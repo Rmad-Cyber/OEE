@@ -3,257 +3,196 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Login · Losses App</title>
-  <meta name="theme-color" content="#2563eb" />
+  <title>Login Losses Tracker</title>
   <style>
-    :root {
-      --bg:#0f172a;
-      --panel:#1e293b;
-      --accent:#2563eb;
-      --text:#f8fafc;
-      --muted:#94a3b8;
-      --danger:#ef4444;
-      --radius:16px;
-    }
-    *{
-      box-sizing:border-box;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,Inter,Arial,sans-serif;
-    }
-    body{
-      margin:0;
-      min-height:100vh;
-      background:radial-gradient(circle at 20% 20%,#1e3a8a33 0%,#0f172a 60%);
-      color:var(--text);
-      display:flex;
-      align-items:center;
-      justify-content:center;
+    body {
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      background:#f5f5f5;
       padding:24px;
     }
-    .card{
-      background:var(--panel);
-      border-radius:var(--radius);
-      box-shadow:0 30px 80px rgba(0,0,0,.6);
-      width:100%;
-      max-width:380px;
-      padding:24px 20px 20px;
-      display:flex;
-      flex-direction:column;
-      gap:16px;
-      border:1px solid rgba(255,255,255,.05);
-    }
-    .brand{
-      display:flex;
-      align-items:flex-start;
-      gap:12px;
-    }
-    .logoBubble{
-      width:40px;
-      height:40px;
-      border-radius:12px;
-      background:var(--accent);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:600;
-      color:white;
-      font-size:14px;
-      box-shadow:0 15px 40px rgba(37,99,235,.6);
-    }
-    h1{
-      margin:0;
-      font-size:1.1rem;
-      line-height:1.4rem;
-      color:var(--text);
-      font-weight:600;
-    }
-    .sub{
-      font-size:.8rem;
-      color:var(--muted);
-      line-height:1.2rem;
-      margin-top:2px;
-    }
-    button.loginBtn{
-      background:var(--accent);
-      color:#fff;
-      border:0;
-      border-radius:10px;
-      font-size:0.95rem;
-      padding:12px 16px;
-      font-weight:500;
-      width:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      box-shadow:0 18px 40px rgba(37,99,235,.45);
-      cursor:pointer;
-    }
-    button.loginBtn:active{
-      transform:scale(.98);
-    }
-    .googleIcon{
+    .card {
+      max-width:400px;
+      margin:24px auto;
       background:#fff;
-      color:#000;
-      border-radius:6px;
-      width:20px;
-      height:20px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:12px;
+      border-radius:12px;
+      box-shadow:0 12px 24px rgba(0,0,0,.08);
+      padding:20px 24px;
+    }
+    h2 {
+      font-size:18px;
+      margin:0 0 8px 0;
       font-weight:600;
     }
-    .statusBox{
-      font-size:.8rem;
-      line-height:1.2rem;
-      min-height:2.4rem;
+    p {
+      font-size:14px;
+      color:#444;
+      margin-top:0;
+      line-height:1.4;
+    }
+    label {
+      display:block;
+      margin-top:16px;
+      font-size:14px;
+      font-weight:600;
+      color:#222;
+    }
+    select,button{
+      width:100%;
+      font-size:16px;
       border-radius:8px;
-      padding:8px 10px;
-      background:#0f172a;
-      border:1px solid rgba(255,255,255,.07);
-      color:var(--muted);
-      word-break:break-word;
+      border:1px solid #ccc;
+      padding:10px 12px;
+      margin-top:8px;
+      background:#fff;
+    }
+    button.primary {
+      background:#222;
+      color:#fff;
+      border:none;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button.primary:active{transform:scale(.98);}
+    .hidden{display:none;}
+    .error{
+      color:#c00;
+      font-size:13px;
+      margin-top:12px;
+      font-weight:500;
+      min-height:18px;
       white-space:pre-wrap;
     }
-    .status-ok{color:#4ade80;}
-    .status-bad{color:#ef4444;}
-    footer{
-      text-align:center;
-      font-size:.7rem;
-      color:#475569;
-      line-height:1rem;
+    .muted{
+      font-size:12px;
+      line-height:1.4;
+      color:#666;
+      margin-top:8px;
+    }
+    .email-tag{
+      display:inline-block;
+      background:#eef2ff;
+      color:#333;
+      font-size:12px;
+      padding:4px 8px;
+      border-radius:6px;
+      font-weight:500;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="brand">
-      <div class="logoBubble">LS</div>
-      <div>
-        <h1>Losses App</h1>
-        <div class="sub">Internal Production Tracking</div>
-      </div>
+
+  <div class="card" id="step-google">
+    <h2>Step 1. Login Google</h2>
+    <p>Gunakan akun produksi yang sudah di-whitelist.</p>
+
+    <button class="primary" id="btnGoogle">Login dengan Google</button>
+
+    <div class="error" id="errGoogle"></div>
+
+    <div class="muted">
+      Catatan: Kalau email tidak terdaftar, akses akan ditolak.
     </div>
-
-    <div class="sub" style="font-size:.8rem;">
-      Silakan login memakai akun yang terdaftar.
-      Jika akun Anda tidak terdaftar sebagai operator / supervisor / admin,
-      akses akan ditolak.
-    </div>
-
-    <button class="loginBtn" onclick="handleLogin()">
-      <span class="googleIcon">G</span>
-      <span>Masuk dengan Google</span>
-    </button>
-
-    <div id="status" class="statusBox">Belum login.</div>
-
-    <footer>
-      v0.1 · Confidential
-    </footer>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script>
-    // Firebase project kamu
-    const firebaseConfig = {
-      apiKey: "AIzaSyBXZzlGWEICRgxBp5RUO78E7Jp2nwvpDsg",
-      authDomain: "ciiapps.firebaseapp.com",
-      projectId: "ciiapps",
-      storageBucket: "ciiapps.firebasestorage.app",
-      messagingSenderId: "1033692640361",
-      appId: "1:1033692640361:web:6e69e8ed3cd2c7ef249ef8",
-      measurementId: "G-ZCG384P9G7"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+  <div class="card hidden" id="step-username">
+    <h2>Step 2. Pilih Username</h2>
+    <p>
+      Login sebagai:
+      <span class="email-tag" id="emailInfo"></span>
+    </p>
 
-    // URL Apps Script Web App (/exec)
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec";
+    <label for="usernameSelect">Siapa Anda hari ini?</label>
+    <select id="usernameSelect"></select>
 
-    // kalau sudah login sebelumnya, cek role langsung
-    auth.onAuthStateChanged(async function(user) {
-      if (!user) return;
-      await afterLoginCheck(user);
+    <button class="primary" id="btnConfirmUser">Masuk</button>
+
+    <div class="error" id="errUser"></div>
+
+    <div class="muted">
+      Username = identitas personal pelapor. Supervisor pilih username supervisor.
+    </div>
+  </div>
+
+<script>
+const BACKEND_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+let allowedUsernames = [];
+let firebaseUserEmail = null;
+
+document.getElementById('btnGoogle').addEventListener('click', async () => {
+  try {
+    // TODO ganti dengan Firebase Auth Google Sign-In
+    firebaseUserEmail = prompt("DEBUG ONLY. Masukkan email Google login:");
+    if (!firebaseUserEmail) return;
+
+    const res = await fetch(BACKEND_URL, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        action:"whoami_by_email",
+        email:firebaseUserEmail
+      })
     });
-
-    async function handleLogin(){
-      const provider = new firebase.auth.GoogleAuthProvider();
-      try {
-        const cred = await auth.signInWithPopup(provider);
-        const user = cred.user;
-        if (!user) return showStatus("Login gagal.", true);
-        await afterLoginCheck(user);
-      } catch (err){
-        showStatus("Login dibatalkan / error.", true);
-        console.error(err);
-      }
-    }
-
-
-async function afterLoginCheck(user){
-  const token = await user.getIdToken(true);
-  const url = WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token);
-  const res = await fetch(url);
-  const data = await res.json();
-
-  if (!data.ok){
-    showStatus("Auth backend gagal: " + (data.error||"Unknown"), true);
-    return;
-  }
-
-  // simpan email & role seperti biasa
-  localStorage.setItem("losses_email", (data.email || ""));
-  localStorage.setItem("losses_role", (data.role || "guest").toLowerCase());
-
-  // CEK ROLE
-  const allowedOrder = ["operator","supervisor","admin"];
-  const roleNow = (data.role || "guest").toLowerCase();
-  const canGoIn = allowedOrder.indexOf(roleNow) !== -1;
-  if (!canGoIn){
-    showStatus(
-      "Akses ditolak untuk akun:\n" +
-      (data.email || "(unknown)") +
-      "\nRole: " + data.role +
-      "\nHubungi admin untuk akses.",
-      true
-    );
-    return;
-  }
-
-  // === NEW: minta username personal jika belum ada ===
-  let uname = localStorage.getItem("losses_username");
-  if (!uname) {
-    uname = prompt("Masukkan nama Anda (Pelapor):");
-    if (uname) {
-      uname = uname.trim();
-      if (uname.length === 0) {
-        uname = null;
-      }
-    }
-    if (!uname) {
-      // user cancel / kosong → kita stop, supaya jelas siapa pelapornya
-      showStatus("Nama Pelapor wajib diisi untuk lanjut.", true);
+    const data = await res.json();
+    if(!data.ok){
+      document.getElementById('errGoogle').textContent="Akun ini tidak diizinkan ("+(data.error||"")+")";
       return;
     }
-    localStorage.setItem("losses_username", uname);
-  }
 
-  // lanjut ke app
-  showStatus("Akses diberikan. Masuk...", false);
-  window.location.href = "app.html";
-}
-
-
-
-    function showStatus(msg, isError){
-      const box = document.getElementById("status");
-      box.textContent = msg;
-      box.classList.remove("status-ok","status-bad");
-      box.classList.add(isError ? "status-bad" : "status-ok");
+    allowedUsernames = data.usernames||[];
+    if(!allowedUsernames.length){
+      document.getElementById('errGoogle').textContent="Email dikenal tapi tidak ada username aktif.";
+      return;
     }
-  </script>
+
+    const sel=document.getElementById('usernameSelect');
+    sel.innerHTML="";
+    allowedUsernames.forEach(u=>{
+      const opt=document.createElement('option');
+      opt.value=u;
+      opt.textContent=u;
+      sel.appendChild(opt);
+    });
+
+    document.getElementById('emailInfo').textContent=firebaseUserEmail;
+    document.getElementById('step-google').classList.add('hidden');
+    document.getElementById('step-username').classList.remove('hidden');
+    document.getElementById('errGoogle').textContent="";
+  }catch(err){
+    document.getElementById('errGoogle').textContent="Error login: "+err;
+  }
+});
+
+document.getElementById('btnConfirmUser').addEventListener('click', async () => {
+  const chosen=document.getElementById('usernameSelect').value;
+  if(!chosen){
+    document.getElementById('errUser').textContent="Pilih username dulu.";
+    return;
+  }
+  try{
+    const res=await fetch(BACKEND_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        action:"resolve_username",
+        email:firebaseUserEmail,
+        username:chosen
+      })
+    });
+    const data=await res.json();
+    if(!data.ok){
+      document.getElementById('errUser').textContent="Username tidak valid.";
+      return;
+    }
+
+    localStorage.setItem("losses_email",data.email);
+    localStorage.setItem("losses_username",data.username);
+    localStorage.setItem("losses_role",data.role);
+
+    window.location.href="app.html";
+  }catch(err){
+    document.getElementById('errUser').textContent="Error validasi username: "+err;
+  }
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,18 @@
+[
+  {
+    "code": "MC-01",
+    "name": "Press HF 60kW"
+  },
+  {
+    "code": "MC-02",
+    "name": "CNC Routing Panel"
+  },
+  {
+    "code": "MC-03",
+    "name": "Edge Bander A"
+  },
+  {
+    "code": "MC-04",
+    "name": "Sanding Line 2 Head"
+  }
+]
