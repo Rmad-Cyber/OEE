@@ -6,28 +6,28 @@
   <title>Login Losses Tracker</title>
   <style>
     body {
-      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-      background:#f5f5f5;
-      padding:24px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 24px;
     }
     .card {
-      max-width:400px;
-      margin:24px auto;
-      background:#fff;
-      border-radius:12px;
-      box-shadow:0 12px 24px rgba(0,0,0,.08);
-      padding:20px 24px;
+      max-width: 400px;
+      margin: 24px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+      padding: 20px 24px;
     }
     h2 {
-      font-size:18px;
-      margin:0 0 8px 0;
-      font-weight:600;
+      font-size: 18px;
+      margin: 0 0 8px 0;
+      font-weight: 600;
     }
     p {
-      font-size:14px;
-      color:#444;
-      margin-top:0;
-      line-height:1.4;
+      font-size: 14px;
+      color: #444;
+      margin-top: 0;
+      line-height: 1.4;
     }
     label {
       display:block;
@@ -36,7 +36,7 @@
       font-weight:600;
       color:#222;
     }
-    select,button{
+    select, button {
       width:100%;
       font-size:16px;
       border-radius:8px;
@@ -52,9 +52,11 @@
       cursor:pointer;
       font-weight:600;
     }
-    button.primary:active{transform:scale(.98);}
-    .hidden{display:none;}
-    .error{
+    button.primary:active {
+      transform: scale(.98);
+    }
+    .hidden { display:none; }
+    .error {
       color:#c00;
       font-size:13px;
       margin-top:12px;
@@ -62,13 +64,13 @@
       min-height:18px;
       white-space:pre-wrap;
     }
-    .muted{
+    .muted {
       font-size:12px;
       line-height:1.4;
       color:#666;
       margin-top:8px;
     }
-    .email-tag{
+    .email-tag {
       display:inline-block;
       background:#eef2ff;
       color:#333;
@@ -81,6 +83,7 @@
 </head>
 <body>
 
+  <!-- STEP 1: Login Google -->
   <div class="card" id="step-google">
     <h2>Step 1. Login Google</h2>
     <p>Gunakan akun produksi yang sudah di-whitelist.</p>
@@ -94,6 +97,7 @@
     </div>
   </div>
 
+  <!-- STEP 2: Pilih Username -->
   <div class="card hidden" id="step-username">
     <h2>Step 2. Pilih Username</h2>
     <p>
@@ -109,90 +113,137 @@
     <div class="error" id="errUser"></div>
 
     <div class="muted">
-      Username = identitas personal pelapor. Supervisor pilih username supervisor.
+      Username = identitas personal pelapor. Wajib pilih nama sendiri.<br/>
+      Supervisor juga pilih usernamenya sendiri (bukan operator).
     </div>
   </div>
 
-<script>
-const BACKEND_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
-let allowedUsernames = [];
-let firebaseUserEmail = null;
 
-document.getElementById('btnGoogle').addEventListener('click', async () => {
-  try {
-    // TODO ganti dengan Firebase Auth Google Sign-In
-    firebaseUserEmail = prompt("DEBUG ONLY. Masukkan email Google login:");
-    if (!firebaseUserEmail) return;
+  <script>
+    // ==========================
+    // CONFIG
+    // ==========================
+    const BACKEND_URL = "PASTE_YOUR_WEB_APP_URL_HERE"; // <-- Ganti dengan URL Web App Apps Script kamu
 
-    const res = await fetch(BACKEND_URL, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        action:"whoami_by_email",
-        email:firebaseUserEmail
-      })
+    // ==========================
+    // STATE
+    // ==========================
+    let allowedUsernames = [];
+    let firebaseUserEmail = null; // ini akan diisi setelah login Google
+
+    // ==========================
+    // STEP 1: LOGIN GOOGLE
+    // ==========================
+    document.getElementById('btnGoogle').addEventListener('click', async () => {
+      try {
+        // ===============================
+        // TODO: GANTI BAGIAN INI DENGAN LOGIN GOOGLE ASLI
+        //
+        // Misal kamu sudah pakai Firebase Auth Google:
+        // const provider = new GoogleAuthProvider();
+        // const result = await signInWithPopup(auth, provider);
+        // firebaseUserEmail = result.user.email;
+        //
+        // Untuk sekarang (debug), kita pakai prompt manual dulu:
+        firebaseUserEmail = prompt("DEBUG ONLY.\nMasukkan email Google yang berhasil login:\n\ne.g. produksi.line1@gmail.com");
+        // ===============================
+
+        if (!firebaseUserEmail) {
+          return;
+        }
+
+        // Panggil backend -> whoami_by_email
+        const res = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({
+            action: "whoami_by_email",
+            email: firebaseUserEmail
+          })
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+          document.getElementById('errGoogle').textContent =
+            "Akun ini tidak diizinkan. (" + (data.error || "") + ")";
+          return;
+        }
+
+        allowedUsernames = data.usernames || [];
+
+        if (!allowedUsernames.length) {
+          document.getElementById('errGoogle').textContent =
+            "Email dikenal tapi tidak ada username aktif.";
+          return;
+        }
+
+        // Populate dropdown
+        const sel = document.getElementById('usernameSelect');
+        sel.innerHTML = "";
+        allowedUsernames.forEach(u => {
+          const opt = document.createElement('option');
+          opt.value = u;
+          opt.textContent = u;
+          sel.appendChild(opt);
+        });
+
+        // Update tampilan email
+        document.getElementById('emailInfo').textContent = firebaseUserEmail;
+
+        // Switch UI: sembunyi step-google, tampil step-username
+        document.getElementById('step-google').classList.add('hidden');
+        document.getElementById('step-username').classList.remove('hidden');
+        document.getElementById('errGoogle').textContent = "";
+
+      } catch (err) {
+        document.getElementById('errGoogle').textContent =
+          "Error login: " + err;
+      }
     });
-    const data = await res.json();
-    if(!data.ok){
-      document.getElementById('errGoogle').textContent="Akun ini tidak diizinkan ("+(data.error||"")+")";
-      return;
-    }
 
-    allowedUsernames = data.usernames||[];
-    if(!allowedUsernames.length){
-      document.getElementById('errGoogle').textContent="Email dikenal tapi tidak ada username aktif.";
-      return;
-    }
 
-    const sel=document.getElementById('usernameSelect');
-    sel.innerHTML="";
-    allowedUsernames.forEach(u=>{
-      const opt=document.createElement('option');
-      opt.value=u;
-      opt.textContent=u;
-      sel.appendChild(opt);
+    // ==========================
+    // STEP 2: KONFIRMASI USERNAME
+    // ==========================
+    document.getElementById('btnConfirmUser').addEventListener('click', async () => {
+      const chosen = document.getElementById('usernameSelect').value;
+      if (!chosen) {
+        document.getElementById('errUser').textContent = "Pilih username dulu.";
+        return;
+      }
+
+      try {
+        const res = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({
+            action: "resolve_username",
+            email: firebaseUserEmail,
+            username: chosen
+          })
+        });
+
+        const data = await res.json();
+        if (!data.ok) {
+          document.getElementById('errUser').textContent =
+            "Username tersebut tidak sesuai dengan email ini.";
+          return;
+        }
+
+        // Simpan identitas ke localStorage
+        localStorage.setItem("losses_email", data.email);
+        localStorage.setItem("losses_username", data.username);
+        localStorage.setItem("losses_role", data.role);
+
+        // Redirect ke app utama
+        window.location.href = "app.html";
+
+      } catch (err) {
+        document.getElementById('errUser').textContent =
+          "Error validasi username: " + err;
+      }
     });
-
-    document.getElementById('emailInfo').textContent=firebaseUserEmail;
-    document.getElementById('step-google').classList.add('hidden');
-    document.getElementById('step-username').classList.remove('hidden');
-    document.getElementById('errGoogle').textContent="";
-  }catch(err){
-    document.getElementById('errGoogle').textContent="Error login: "+err;
-  }
-});
-
-document.getElementById('btnConfirmUser').addEventListener('click', async () => {
-  const chosen=document.getElementById('usernameSelect').value;
-  if(!chosen){
-    document.getElementById('errUser').textContent="Pilih username dulu.";
-    return;
-  }
-  try{
-    const res=await fetch(BACKEND_URL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        action:"resolve_username",
-        email:firebaseUserEmail,
-        username:chosen
-      })
-    });
-    const data=await res.json();
-    if(!data.ok){
-      document.getElementById('errUser').textContent="Username tidak valid.";
-      return;
-    }
-
-    localStorage.setItem("losses_email",data.email);
-    localStorage.setItem("losses_username",data.username);
-    localStorage.setItem("losses_role",data.role);
-
-    window.location.href="app.html";
-  }catch(err){
-    document.getElementById('errUser').textContent="Error validasi username: "+err;
-  }
-});
-</script>
+  </script>
 </body>
 </html>
