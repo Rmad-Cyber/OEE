@@ -1,801 +1,244 @@
 <!DOCTYPE html>
 <html lang="id" class="h-full bg-gray-100">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Losses Tracker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Losses Tracker</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Firebase (dipakai saat ONLINE mode) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
-    <style>
-        /* sembunyi scrollbar */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* tombol sidebar aktif */
-        .sidebar-nav-button.active {
-            background-color: #1f2937;
-            color: #ffffff;
-        }
-    </style>
+  <!-- Local stylesheet -->
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="h-full flex flex-col">
+  <!-- HEADER -->
+  <header class="bg-white shadow-sm sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <button id="open-sidebar-button" class="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100" aria-label="Buka menu">
+          <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 id="page-title" class="text-xl font-bold text-gray-900">Input Data</h1>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Mode: <span id="mode-value" class="font-medium text-green-700">SAFE</span></span>
+          <button id="toggleModeBtn" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">Switch</button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-    <!-- HEADER (sticky top) -->
-    <header class="bg-white shadow-sm sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <!-- Hamburger -->
-                <div class="flex-shrink-0">
-                    <button id="open-sidebar-button" class="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
-                        <span class="sr-only">Buka menu</span>
-                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+  <!-- SIDEBAR + overlay -->
+  <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/50 z-40"></div>
+  <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white z-50 flex flex-col transform -translate-x-full transition-transform">
+    <div class="p-4 border-b border-gray-700">
+      <div class="flex items-center space-x-3">
+        <svg class="w-10 h-10 text-gray-400 rounded-full" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+        <div class="min-w-0">
+          <div id="sidebarUserName" class="font-medium text-lg truncate">(Belum set nama)</div>
+          <div id="sidebarUserEmail" class="block text-sm text-blue-400 truncate"></div>
+          <div id="sidebarUserRole" class="text-[10px] text-gray-400 bg-gray-700/40 inline-block px-2 py-[2px] rounded mt-1 uppercase tracking-wide">guest</div>
+          <button id="btnChangeUser" class="mt-2 w-full rounded-lg bg-gray-700/50 text-[11px] text-gray-200 py-1.5 hover:bg-gray-700">Ganti Nama Pelapor</button>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 py-4 space-y-1 overflow-y-auto no-scrollbar">
+      <button data-tab="input" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <span>Input Data</span>
+      </button>
+      <button data-tab="dashboard" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M7 13v5m4-9v9m4-6v6"/></svg>
+        <span>Dasbor</span>
+      </button>
+      <button data-tab="mylog" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+        <span>My Log</span>
+      </button>
+      <button data-tab="alllog" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        <span>All Log</span>
+      </button>
+    </nav>
+    <div class="p-4 border-t border-gray-700">
+      <button id="logout-button" class="w-full flex items-center px-4 py-3 rounded-md text-red-400 hover:bg-red-800 hover:text-white"><span>Log Out</span></button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="flex-1 overflow-y-auto">
+    <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+      <main>
+        <!-- TAB: INPUT DATA -->
+        <section id="tab-input" class="tab-content">
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Formulir Pencatatan Loss</h2>
+            <form id="loss-form" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="fTanggal" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Kejadian</label>
+                  <input type="date" id="fTanggal" class="input" required />
                 </div>
-
-                <!-- Judul Halaman -->
-                <div class="flex-grow flex justify-center">
-                    <h1 id="page-title" class="text-xl font-bold text-gray-900">Input Data</h1>
+                <div>
+                  <label for="fShift" class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
+                  <select id="fShift" class="input" required>
+                    <option value="">- pilih -</option>
+                    <option>1</option>
+                    <option>2</option>
+                    <option>3</option>
+                  </select>
                 </div>
+              </div>
 
-                <!-- spacer kanan -->
-                <div class="flex-shrink-0 w-8"></div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="fMesin" class="block text-sm font-medium text-gray-700 mb-1">Nama Mesin / Line</label>
+                  <input id="fMesin" class="input" placeholder="Contoh: MC-01 / Packing Line 1" required />
+                </div>
+                <div>
+                  <label for="fArea" class="block text-sm font-medium text-gray-700 mb-1">Area</label>
+                  <input id="fArea" class="input" placeholder="Contoh: Assembly / Finishing" />
+                </div>
+              </div>
+
+              <div>
+                <label for="fKategori" class="block text-sm font-medium text-gray-700 mb-1">Kategori (Losses)</label>
+                <select id="fKategori" class="input" required>
+                  <option value="">-- Pilih Kategori Loss --</option>
+                  <option>Breakdown</option>
+                  <option>Short-Stop</option>
+                  <option>Change Over</option>
+                  <option>Setup/Preparing</option>
+                  <option>Speed Loss</option>
+                  <option>Rework/Reject</option>
+                  <option>External Factor</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="fStart" class="block text-sm font-medium text-gray-700 mb-1">Waktu Mulai Berhenti</label>
+                  <input type="time" id="fStart" class="input" required />
+                </div>
+                <div>
+                  <label for="fFinish" class="block text-sm font-medium text-gray-700 mb-1">Waktu Selesai Berhenti</label>
+                  <input type="time" id="fFinish" class="input" required />
+                </div>
+              </div>
+
+              <div>
+                <label for="fDurasi" class="block text-sm font-medium text-gray-700 mb-1">Waktu Hilang (menit)</label>
+                <input id="fDurasi" class="input bg-gray-100" readonly placeholder="Otomatis dari selisih waktu" />
+              </div>
+
+              <div>
+                <label for="fIssue" class="block text-sm font-medium text-gray-700 mb-1">Alasan / Issue</label>
+                <textarea id="fIssue" class="input" rows="3" placeholder="Contoh: Sensor H-12 error, menunggu spare part..."></textarea>
+              </div>
+
+              <div>
+                <label for="fPelapor" class="block text-sm font-medium text-gray-700 mb-1">Pelapor</label>
+                <input id="fPelapor" class="input bg-gray-100" readonly placeholder="Akan otomatis isi nama Anda" />
+              </div>
+
+              <button type="submit" class="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700">Simpan Data Loss</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- TAB: DASHBOARD -->
+        <section id="tab-dashboard" class="tab-content hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-lg lg:col-span-2">
+              <h3 class="text-xl font-semibold text-gray-800 mb-4">Analisis Pareto Kerugian</h3>
+              <div class="h-64 md:h-96"><canvas id="pareto-chart"></canvas></div>
             </div>
-        </div>
-    </header>
-
-    <!-- SIDEBAR + overlay -->
-    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ease-linear"></div>
-
-    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white z-50 flex flex-col transform -translate-x-full transition-transform duration-300 ease-in-out">
-
-        <!-- User / Profile -->
-        <div class="p-4 border-b border-gray-700">
-            <div class="flex items-center space-x-3">
-                <svg class="w-10 h-10 text-gray-400 rounded-full" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-                </svg>
-                <div class="min-w-0">
-                    <div id="sidebarUserName" class="font-medium text-lg truncate">Loading...</div>
-                    <div id="sidebarUserEmail" class="block text-sm text-blue-400 truncate">email@loading.com</div>
-                    <div id="sidebarUserRole" class="text-[10px] text-gray-400 bg-gray-700/40 inline-block px-2 py-[2px] rounded mt-1 uppercase tracking-wide">role</div>
-
-                    <!-- tombol ganti nama pelapor -->
-                    <button onclick="changeUsername()" class="mt-2 w-full rounded-lg bg-gray-700/50 text-[11px] text-gray-200 py-1.5 hover:bg-gray-700">
-                        Ganti Nama Pelapor
-                    </button>
-                </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg lg:col-span-2">
+              <h3 class="text-xl font-semibold text-gray-800 mb-4">Tren Kerugian Harian</h3>
+              <div class="h-64 md:h-96"><canvas id="trend-chart"></canvas></div>
             </div>
-        </div>
+          </div>
+        </section>
 
-        <!-- NAV -->
-        <nav class="flex-1 py-4 space-y-1 overflow-y-auto no-scrollbar">
-            <button data-tab="input" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-                <span>Input Data</span>
-            </button>
+        <!-- TAB: MY LOG -->
+        <section id="tab-mylog" class="tab-content hidden">
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+              <h2 class="text-2xl font-semibold text-gray-800">My Log</h2>
+              <div class="flex items-center gap-2 ml-auto">
+                <label for="mySince" class="text-sm text-gray-700">Sejak</label>
+                <input type="date" id="mySince" class="input" />
+                <button id="applyMyLogFilter" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">Terapkan</button>
+                <button id="refreshMyLog" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">🔄 Refresh</button>
+                <button id="downloadMyLogCsv" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">⬇️ CSV</button>
+              </div>
+            </div>
+            <p class="text-sm text-gray-500 mb-3">Menampilkan data sesuai nama pelapor di sidebar.</p>
+            <div class="overflow-x-auto no-scrollbar">
+              <table class="min-w-full divide-y divide-gray-200 table">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th>Tanggal</th><th>Shift</th><th>Area</th><th>Mesin</th><th>Kategori</th><th>Issue</th><th>Mulai</th><th>Selesai</th><th>Menit</th>
+                  </tr>
+                </thead>
+                <tbody id="mylog-body"><tr id="mylog-placeholder"><td colspan="9" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-            <button data-tab="dashboard" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7m-4 4v-4m-4 4v-4"></path>
-                </svg>
-                <span>Dasbor</span>
-            </button>
+        <!-- TAB: ALL LOG -->
+        <section id="tab-alllog" class="tab-content hidden">
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-2xl font-semibold text-gray-800">All Log</h2>
+              <div class="flex items-center gap-2">
+                <button id="downloadAllLogCsv" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">⬇️ CSV</button>
+                <button id="refreshAllLog" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">🔄 Refresh</button>
+              </div>
+            </div>
 
-            <button data-tab="log" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"></path>
-                </svg>
-                <span>Log Data</span>
-            </button>
-        </nav>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-3 mb-4">
+              <input type="date" id="fltSince" class="input" />
+              <input type="date" id="fltUntil" class="input" />
+              <select id="fltShift" class="input"><option value="">Semua Shift</option><option>1</option><option>2</option><option>3</option></select>
+              <input id="fltArea" class="input" placeholder="Area" />
+              <input id="fltMesin" class="input" placeholder="Nama Mesin" />
+              <select id="fltKategori" class="input"><option value="">Semua Kategori</option><option>Breakdown</option><option>Short-Stop</option><option>Change Over</option><option>Setup/Preparing</option><option>Speed Loss</option><option>Rework/Reject</option><option>External Factor</option></select>
+              <input id="fltPelapor" class="input md:col-span-3" placeholder="Pelapor" />
+              <div class="md:col-span-3 flex items-center gap-2">
+                <button id="btnApplyAllFilters" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">Terapkan Filter</button>
+                <button id="btnResetAllFilters" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">Reset</button>
+              </div>
+            </div>
 
-        <!-- LOGOUT -->
-        <div class="p-4 border-t border-gray-700">
-            <button id="logout-button" class="w-full flex items-center px-4 py-3 rounded-md text-red-400 hover:bg-red-800 hover:text-white">
-                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-                <span>Log Out</span>
-            </button>
-        </div>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <div class="flex-1 overflow-y-auto">
-        <div class="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-            <main>
-                <!-- TAB: INPUT DATA -->
-                <section id="tab-input" class="tab-content">
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">
-                            Formulir Pencatatan Loss
-                        </h2>
-
-                        <form id="loss-form" class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="fTanggal" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Tanggal Kejadian
-                                    </label>
-                                    <input type="date" id="fTanggal" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
-                                </div>
-
-                                <div>
-                                    <label for="fShift" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Shift
-                                    </label>
-                                    <select id="fShift" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
-                                        <option value="">- pilih -</option>
-                                        <option>1</option>
-                                        <option>2</option>
-                                        <option>3</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label for="fMesin" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Nama Mesin / Line
-                                </label>
-                                <input id="fMesin" placeholder="Contoh: MC-01 / Packing Line 1" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
-                            </div>
-
-                            <div>
-                                <label for="fPelapor" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Pelapor
-                                </label>
-                                <input id="fPelapor" placeholder="Akan otomatis isi nama Anda" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-700 focus:outline-none" readonly required>
-                                <p class="text-[11px] text-gray-500 mt-1">
-                                    Untuk ganti nama pelapor, buka menu samping & pilih "Ganti Nama Pelapor".
-                                </p>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="fStart" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Waktu Mulai Berhenti
-                                    </label>
-                                    <input type="time" id="fStart" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
-                                </div>
-
-                                <div>
-                                    <label for="fFinish" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Waktu Selesai Berhenti
-                                    </label>
-                                    <input type="time" id="fFinish" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label for="fKategori" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Kategori (Six Big Losses)
-                                </label>
-                                <select id="fKategori" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
-                                    <option value="">-- Pilih Kategori Loss --</option>
-                                    <option value="Breakdown">Breakdown</option>
-                                    <option value="Minor Stop">Minor Stop</option>
-                                    <option value="Planned Stop">Planned Stop</option>
-                                    <option value="Material">Material</option>
-                                    <option value="Quality">Quality</option>
-                                    <option value="Reduced Speed">Reduced Speed</option>
-                                    <option value="Startup Losses">Startup Losses</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label for="fIssue" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Alasan / Issue
-                                </label>
-                                <textarea id="fIssue" rows="3" placeholder="Contoh: Sensor H-12 error, menunggu spare part..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
-                            </div>
-
-                            <button type="submit" class="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-                                Simpan Data Loss
-                            </button>
-                        </form>
-                    </div>
-                </section>
-
-                <!-- TAB: DASHBOARD -->
-                <section id="tab-dashboard" class="tab-content hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Pareto -->
-                        <div class="bg-white p-6 rounded-xl shadow-lg lg:col-span-2">
-                            <h3 class="text-xl font-semibold text-gray-800 mb-4">
-                                Analisis Pareto Kerugian
-                            </h3>
-                            <div class="h-64 md:h-96">
-                                <canvas id="pareto-chart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Tren -->
-                        <div class="bg-white p-6 rounded-xl shadow-lg lg:col-span-2">
-                            <h3 class="text-xl font-semibold text-gray-800 mb-4">
-                                Tren Kerugian Harian (Dummy)
-                            </h3>
-                            <div class="h-64 md:h-96">
-                                <canvas id="trend-chart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB: LOG -->
-                <section id="tab-log" class="tab-content hidden">
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">Log Data Kerugian</h2>
-
-                        <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <input type="date" id="fSince" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
-                            <input type="text" id="fSearch" placeholder="Cari issue/mesin..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
-                            <button id="search-button" class="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                🔍 Cari
-                            </button>
-                        </div>
-
-                        <div class="overflow-x-auto no-scrollbar">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesin</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issue</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mulai</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selesai</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Menit</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="log-body" class="bg-white divide-y divide-gray-200">
-                                    <tr id="log-placeholder">
-                                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">Memuat data...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="text-center mt-6">
-                            <button id="loadMoreBtn" class="py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
-                                Muat Lebih Banyak
-                            </button>
-                        </div>
-                    </div>
-                </section>
-            </main>
-        </div>
+            <div class="overflow-x-auto no-scrollbar">
+              <table class="min-w-full divide-y divide-gray-200 table">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th>Tanggal</th><th>Shift</th><th>Area</th><th>Mesin</th><th>Kategori</th><th>Issue</th><th>Mulai</th><th>Selesai</th><th>Menit</th><th>Pelapor</th>
+                  </tr>
+                </thead>
+                <tbody id="alllog-body"><tr id="alllog-placeholder"><td colspan="10" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
+  </div>
 
-    <!-- TOAST SUCCESS -->
-    <div id="toast-success" class="hidden fixed bottom-10 right-10 bg-green-500 text-white py-3 px-6 rounded-lg shadow-xl z-50 transition-transform translate-x-full">
-        Data berhasil disimpan!
-    </div>
+  <!-- TOASTS -->
+  <div id="toast-success" class="hidden fixed bottom-10 right-10 bg-green-500 text-white py-3 px-6 rounded-lg shadow-xl z-50 transition-transform translate-x-full">Berhasil!</div>
+  <div id="toast-error" class="hidden fixed bottom-10 right-10 bg-red-500 text-white py-3 px-6 rounded-lg shadow-xl z-50 transition-transform translate-x-full">Error.</div>
 
-    <!-- TOAST ERROR -->
-    <div id="toast-error" class="hidden fixed bottom-10 right-10 bg-red-500 text-white py-3 px-6 rounded-lg shadow-xl z-50 transition-transform translate-x-full">
-        Error: Gagal.
-    </div>
-
-
-    <script>
-        // ======== STATE APLIKASI ========
-        let allLossData = [];
-        let paretoChartInstance = null;
-        let trendChartInstance = null;
-        let page = 1;
-        let loading = false;
-        let currentRole = "guest";
-
-        // ======== DOM REF ========
-        const tabContents = document.querySelectorAll('.tab-content');
-        const openSidebarButton = document.getElementById('open-sidebar-button');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarNavButtons = document.querySelectorAll('.sidebar-nav-button');
-        const pageTitle = document.getElementById('page-title');
-
-        const lossForm = document.getElementById('loss-form');
-        const logBody = document.getElementById('log-body');
-        const logPlaceholder = document.getElementById('log-placeholder');
-
-        const logoutButton = document.getElementById('logout-button');
-        const searchButton = document.getElementById('search-button');
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
-
-        const toastSuccess = document.getElementById('toast-success');
-        const toastError = document.getElementById('toast-error');
-
-        // ======== FIREBASE CONFIG ========
-        const firebaseConfig = {
-            apiKey: "AIzaSyBXZzlGWEICRgxBp5RUO78E7Jp2nwvpDsg",
-            authDomain: "ciiapps.firebaseapp.com",
-            projectId: "ciiapps",
-            storageBucket: "ciiapps.firebasestorage.app",
-            messagingSenderId: "1033692640361",
-            appId: "1:1033692640361:web:6e69e8ed3cd2c7ef249ef8",
-            measurementId: "G-ZCG384P9G7"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec";
-        const MIN_ROLE_APP = ["operator","supervisor","admin"];
-
-        // ======== HELPER FUNGI ========
-        function val(id){
-            const x = document.getElementById(id);
-            return x && x.value ? x.value.trim() : "";
-        }
-
-        function showToast(type, message) {
-            const toast = (type === 'success') ? toastSuccess : toastError;
-            if (!toast) return;
-            toast.textContent = message;
-            toast.classList.remove('hidden', 'translate-x-full');
-            toast.classList.add('transform', 'translate-x-0');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-x-0');
-                toast.classList.add('translate-x-full');
-                setTimeout(() => { toast.classList.add('hidden'); }, 300);
-            }, 3000);
-        }
-
-        // username management (losses_username)
-        function changeUsername(){
-            const current = localStorage.getItem("losses_username") || "";
-            const nu = prompt("Nama pelapor baru?", current);
-            if (!nu) return;
-            const cleaned = nu.trim();
-            if (!cleaned) {
-                showToast("error","Nama tidak boleh kosong.");
-                return;
-            }
-            localStorage.setItem("losses_username", cleaned);
-
-            // update sidebar + form + header
-            const sideName = document.getElementById("sidebarUserName");
-            if (sideName) sideName.textContent = cleaned;
-
-            const pelaporField = document.getElementById("fPelapor");
-            if (pelaporField) pelaporField.value = cleaned;
-
-            const headerInfoEl = document.getElementById("page-title-userinfo");
-            // headerInfoEl not always exist; we'll update via refreshHeaderInfo() instead
-            refreshHeaderInfo();
-
-            showToast("success","Nama pelapor diperbarui.");
-        }
-
-        function refreshHeaderInfo(){
-            const uname = localStorage.getItem("losses_username") || "";
-            const email = localStorage.getItem("losses_email") || "";
-            const role  = localStorage.getItem("losses_role")  || currentRole || "";
-
-            // sidebar
-            const sideName  = document.getElementById("sidebarUserName");
-            const sideEmail = document.getElementById("sidebarUserEmail");
-            const sideRole  = document.getElementById("sidebarUserRole");
-            if (sideName)  sideName.textContent  = uname || "(Belum set nama)";
-            if (sideEmail) sideEmail.textContent = email || "";
-            if (sideRole)  sideRole.textContent  = role || "";
-
-            // di form Pelapor
-            const pelaporField = document.getElementById("fPelapor");
-            if (pelaporField && uname) pelaporField.value = uname;
-        }
-
-        // ======== SIDEBAR / NAV TAB ========
-        function toggleSidebar() {
-            sidebarOverlay.classList.toggle('hidden');
-            sidebar.classList.toggle('hidden');
-            sidebar.classList.toggle('-translate-x-full');
-            sidebar.classList.toggle('translate-x-0');
-        }
-
-        function switchTab(tabName) {
-            tabContents.forEach(content => {
-                content.classList.add('hidden');
-            });
-
-            sidebarNavButtons.forEach(button => {
-                button.classList.remove('active', 'bg-gray-900', 'text-white');
-                button.classList.add('text-gray-300', 'hover:bg-gray-700');
-            });
-
-            const activeContent = document.getElementById(`tab-${tabName}`);
-            if (activeContent) {
-                activeContent.classList.remove('hidden');
-            }
-
-            const activeButton = document.querySelector(`.sidebar-nav-button[data-tab="${tabName}"]`);
-            if (activeButton) {
-                activeButton.classList.add('active', 'bg-gray-900', 'text-white');
-                activeButton.classList.remove('text-gray-300', 'hover:bg-gray-700');
-
-                pageTitle.textContent = activeButton.querySelector('span').textContent;
-            }
-
-            // Load data saat buka tab tertentu
-            if (tabName === 'log') {
-                loadLosses(true);
-            } else if (tabName === 'dashboard') {
-                loadLosses(true);
-            }
-
-            // auto-close sidebar di mobile
-            if (!sidebar.classList.contains('-translate-x-full')) {
-                toggleSidebar();
-            }
-        }
-
-        // ======== AUTH FLOW ========
-        // Gate awal pakai localStorage aja (tanpa token backend dulu)
-        (function startupGate(){
-            const role  = (localStorage.getItem("losses_role")  || "").toLowerCase();
-            const email =  localStorage.getItem("losses_email") || "";
-            const uname =  localStorage.getItem("losses_username") || "";
-            currentRole = role || "guest";
-
-            // isi tampilan awal
-            const sideName  = document.getElementById("sidebarUserName");
-            const sideEmail = document.getElementById("sidebarUserEmail");
-            const sideRole  = document.getElementById("sidebarUserRole");
-
-            if (sideName)  sideName.textContent  = uname || "(Belum set nama)";
-            if (sideEmail) sideEmail.textContent = email || "";
-            if (sideRole)  sideRole.textContent  = currentRole || "";
-
-            // prefill Pelapor di form
-            const pelaporField = document.getElementById("fPelapor");
-            if (pelaporField && uname) pelaporField.value = uname;
-
-            // kalau role localStorage ga valid, kita belum langsung tendang
-            // karena nanti auth.onAuthStateChanged akan verifikasi token sebenarnya.
-        })();
-
-        // Gate kedua pakai Firebase token + backend whoami
-        auth.onAuthStateChanged(async function(u){
-            if(!u){
-                window.location.href="index.html";
-                return;
-            }
-            try {
-                const token = await u.getIdToken(true);
-                const res = await fetch(
-                    WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token)
-                );
-                const data = await res.json();
-
-                if (!data.ok || !data.role) throw new Error(data.error || "Gagal ambil data user");
-
-                currentRole = (data.role||"guest").toLowerCase();
-                if (MIN_ROLE_APP.indexOf(currentRole) === -1){
-                    alert("Akses ditolak untuk peran: " + currentRole);
-                    doLogout();
-                    return;
-                }
-
-                // update localStorage (email/role keep latest from backend)
-                localStorage.setItem("losses_email", data.email || "");
-                localStorage.setItem("losses_role", currentRole);
-
-                // JANGAN timpa losses_username di sini.
-                // username tetap lokal (tiap operator / shift).
-
-                refreshHeaderInfo();
-
-            } catch (error) {
-                console.error("Error verifikasi token:", error);
-                showToast('error', 'Sesi Anda tidak valid. Silakan login kembali.');
-                setTimeout(doLogout, 2000);
-            }
-        });
-
-        async function doLogout(){
-            await auth.signOut();
-            // jangan hapus losses_username
-            localStorage.removeItem("losses_email");
-            localStorage.removeItem("losses_role");
-            window.location.href="index.html";
-        }
-
-        // ======== SUBMIT LOSSES ========
-        async function submitLosses(ev){
-            ev.preventDefault();
-
-            if (MIN_ROLE_APP.indexOf(currentRole) === -1){
-                showToast("error", "Akses ditolak. Peran Anda: " + currentRole);
-                return;
-            }
-
-            const u = auth.currentUser;
-            if(!u){
-                showToast("error", "Sesi berakhir. Silakan login ulang.");
-                return;
-            }
-
-            const unameNow = (localStorage.getItem("losses_username") || "").trim();
-            if (!unameNow) {
-                showToast("error", "Nama Pelapor belum diset. Klik 'Ganti Nama Pelapor' di menu samping.");
-                return;
-            }
-
-            const payload = [{
-                "Tanggal":       val("fTanggal"),
-                "Shift":         val("fShift"),
-                "Factory":       "",
-                "Line":          "",
-                "Mesin":         val("fMesin"),
-                "Pelapor":       unameNow,       // pakai username lokal
-                "Issue":         val("fIssue"),
-                "Kategori":      val("fKategori"),
-                "WAKTU START":   val("fStart"),
-                "WAKTU FINISH":  val("fFinish"),
-                "Durasi Hilang": ""              // hitung di sheet/backend
-            }];
-
-            const token = await u.getIdToken(true);
-            showToast('success', 'Menyimpan...');
-
-            try {
-                const res = await fetch(
-                    WEBAPP_URL + "?action=create_losses",
-                    {
-                        method:"POST",
-                        headers:{"Content-Type":"text/plain"},
-                        body:JSON.stringify({ token: token, data: payload })
-                    }
-                );
-                const data = await res.json();
-
-                if(data.ok){
-                    showToast('success', '✅ Data berhasil disimpan!');
-
-                    // reset form tapi pertahankan Pelapor & tanggal hari ini
-                    const pelaporBackup = unameNow;
-                    document.getElementById("loss-form").reset();
-                    document.getElementById("fTanggal").valueAsDate = new Date();
-                    document.getElementById("fPelapor").value = pelaporBackup;
-                } else {
-                    throw new Error(data.error || "Unknown error");
-                }
-            } catch (error) {
-                showToast('error', `❌ Gagal: ${error.message}`);
-            }
-        }
-
-        // ======== LOAD HISTORY ========
-        async function loadLosses(reset = false){
-            if (MIN_ROLE_APP.indexOf(currentRole) === -1){
-                showToast("error", "Akses ditolak.");
-                return;
-            }
-            if(loading) return;
-            loading = true;
-
-            const u = auth.currentUser;
-            if(!u){
-                showToast("error", "Sesi berakhir.");
-                loading=false;
-                return;
-            }
-
-            if(reset){
-                page = 1;
-                allLossData = [];
-                logBody.innerHTML = '';
-                logPlaceholder.innerHTML = '<td colspan="8" class="px-6 py-4 text-center text-gray-500">Memuat data...</td>';
-                logPlaceholder.style.display = 'table-row';
-            }
-
-            const token = await u.getIdToken(true);
-            const since = val("fSince");
-            const q     = val("fSearch");
-
-            const params = new URLSearchParams({
-                action:"list_losses",
-                token:token,
-                page:String(page),
-                pageSize:String(100),
-                q:q,
-                since:since
-            });
-
-            try {
-                const res = await fetch(WEBAPP_URL + "?" + params.toString());
-                const data = await res.json();
-
-                if(data.ok){
-                    const items = data.items || [];
-                    allLossData = allLossData.concat(items);
-                    renderLossRows(items);
-                    page++;
-
-                    loadMoreBtn.style.display = (items.length >= 100) ? "inline-block" : "none";
-
-                    if (allLossData.length === 0) {
-                        logPlaceholder.innerHTML = '<td colspan="8" class="px-6 py-4 text-center text-gray-500">Tidak ada data ditemukan.</td>';
-                    } else {
-                        logPlaceholder.style.display = 'none';
-                    }
-
-                    if (reset) {
-                        updateAllCharts();
-                    }
-                } else {
-                    throw new Error(data.error || "Unknown error");
-                }
-            } catch (error) {
-                showToast("error", "Error: " + error.message);
-                logPlaceholder.innerHTML = `<td colspan="8" class="px-6 py-4 text-center text-red-500">Gagal memuat data: ${error.message}</td>`;
-            }
-
-            loading = false;
-        }
-
-        function renderLossRows(rows){
-            if (rows.length === 0 && page === 1) {
-                logPlaceholder.innerHTML = '<td colspan="8" class="px-6 py-4 text-center text-gray-500">Tidak ada data ditemukan.</td>';
-                logPlaceholder.style.display = 'table-row';
-                return;
-            }
-
-            logPlaceholder.style.display = 'none';
-            const tbody = logBody;
-            if(!tbody) return;
-
-            rows.forEach(r=>{
-                const tr = document.createElement("tr");
-                tr.innerHTML =
-                    `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["Tanggal"]||"")}</td>`
-                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["Shift"]||"")}</td>`
-                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["Mesin"]||"")}</td>`
-                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["Kategori"]||"")}</td>`
-                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate" title="${r["Issue"]||""}">${(r["Issue"]||"")}</td>`
-                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["WAKTU START"]||"")}</td>`
-                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${(r["WAKTU FINISH"]||"")}</td>`
-                  + `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${(r["Durasi Hilang"]||"")}</td>`;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // ======== DASHBOARD CHARTS ========
-        function updateAllCharts() {
-            updateParetoChart();
-            updateTrendChart();
-        }
-
-        function updateParetoChart() {
-            const ctx = document.getElementById('pareto-chart').getContext('2d');
-
-            // agregasi kategori -> total menit
-            const lossSummary = allLossData.reduce((acc, entry) => {
-                const category = entry["Kategori"] || "Lainnya";
-                const duration = Number(entry["Durasi Hilang"]) || 0;
-
-                if (!acc[category]) { acc[category] = 0; }
-                acc[category] += duration;
-                return acc;
-            }, {});
-
-            const sortedData = Object.entries(lossSummary).sort(([,a],[,b]) => b-a);
-            const labels = sortedData.map(item => item[0]);
-            const data = sortedData.map(item => item[1]);
-
-            if (labels.length === 0) {
-                labels.push('Breakdown', 'Setup/Adjustment', 'Minor Stoppages');
-                data.push(120, 80, 60);
-            }
-
-            if (paretoChartInstance) { paretoChartInstance.destroy(); }
-
-            paretoChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Durasi Loss (Menit)',
-                        data: data,
-                        backgroundColor: 'rgba(239, 68, 68, 0.6)',
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, title: { display: true, text: 'Total Menit Loss' } },
-                        x: { title: { display: true, text: 'Kategori Kerugian' } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
-
-        function updateTrendChart() {
-            const ctx = document.getElementById('trend-chart').getContext('2d');
-            if (trendChartInstance) { trendChartInstance.destroy(); }
-
-            // dummy untuk sekarang
-            const trendLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-            const trendData = [60, 45, 80, 50, 70, 30, 90];
-
-            trendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: trendLabels,
-                    datasets: [{
-                        label: 'Total Loss (Menit)',
-                        data: trendData,
-                        fill: false,
-                        borderColor: 'rgb(59, 130, 246)',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, title: { display: true, text: 'Total Menit' } }
-                    }
-                }
-            });
-        }
-
-        // ======== EVENT LISTENERS / INIT ========
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                document.getElementById('fTanggal').valueAsDate = new Date();
-                document.getElementById('fSince').valueAsDate = new Date();
-            } catch (e) { console.warn("Gagal set tanggal default."); }
-
-            // set Pelapor default dari localStorage di first render
-            refreshHeaderInfo();
-
-            // form submit
-            lossForm.addEventListener('submit', submitLosses);
-
-            // logout
-            logoutButton.addEventListener('click', doLogout);
-
-            // cari & load more log
-            searchButton.addEventListener('click', () => loadLosses(true));
-            loadMoreBtn.addEventListener('click', () => loadLosses(false));
-
-            // sidebar toggle
-            openSidebarButton.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-
-            // nav tab switch
-            sidebarNavButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    switchTab(button.dataset.tab);
-                });
-            });
-
-            // init tampilan default
-            sidebar.classList.add('hidden', '-translate-x-full');
-            sidebar.classList.remove('translate-x-0');
-            sidebarOverlay.classList.add('hidden');
-            switchTab('input');
-        });
-    </script>
+  <!-- App JS -->
+  <script defer src="./app.js"></script>
 </body>
 </html>
