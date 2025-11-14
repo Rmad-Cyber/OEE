@@ -153,11 +153,9 @@
     </footer>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script>
-    // Firebase project kamu
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
     const firebaseConfig = {
       apiKey: "AIzaSyBXZzlGWEICRgxBp5RUO78E7Jp2nwvpDsg",
       authDomain: "ciiapps.firebaseapp.com",
@@ -170,19 +168,22 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    // URL Apps Script Web App (/exec)
-    // Ganti WEBAPP_URL (saat dev, biarkan localhost):
-  const WEBAPP_URL = "https://oee-api-839375767453.asia-southeast2.run.app"; // Setelah deploy Cloud Run, ubah ke: https://your-cloud-run-url.run.app
+    // INI ADALAH BASE URL ANDA
+    const API_URL = "https://oee-api-839375767453.asia-southeast2.run.app"; 
 
-    // kalau sudah login sebelumnya, cek role langsung
     auth.onAuthStateChanged(async function(user) {
-      if (!user) return;
+      if (!user) {
+        showStatus("Menunggu login...", false);
+        return;
+      }
+      // Jika user sudah login, langsung cek
       await afterLoginCheck(user);
     });
 
     async function handleLogin(){
       const provider = new firebase.auth.GoogleAuthProvider();
       try {
+        showStatus("Membuka popup Google...", false);
         const cred = await auth.signInWithPopup(provider);
         const user = cred.user;
         if (!user) return showStatus("Login gagal.", true);
@@ -193,61 +194,69 @@
       }
     }
 
+    async function afterLoginCheck(user){
+      showStatus("Memverifikasi token...", false);
+      const token = await user.getIdToken(true);
 
-async function afterLoginCheck(user){
-  const token = await user.getIdToken(true);
-  const url = WEBAPP_URL + "/whoami?token=" + encodeURIComponent(token);
-  const res = await fetch(url);
-  const data = await res.json();
+      // 🛑 PERBAIKAN: Panggil /whoami dengan Authorization Header
+      try {
+        const res = await fetch(`${API_URL}/whoami`, {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
 
-  if (!data.ok){
-    showStatus("Auth backend gagal: " + (data.error||"Unknown"), true);
-    return;
-  }
+        const data = await res.json();
+        
+        if (!res.ok || !data.ok){
+          showStatus("Autentikasi gagal: " + (data.error || "Token ditolak"), true);
+          try { await auth.signOut(); } catch(e) {}
+          return;
+        }
+        
+        // Simpan data
+        localStorage.setItem("losses_email", (data.email || ""));
+        localStorage.setItem("losses_role", (data.role || "guest").toLowerCase());
 
-  // simpan email & role seperti biasa
-  localStorage.setItem("losses_email", (data.email || ""));
-  localStorage.setItem("losses_role", (data.role || "guest").toLowerCase());
+        // Cek Role
+        const allowedRoles = ["operator","supervisor","admin"];
+        const userRole = (data.role || "guest").toLowerCase();
+        
+        if (!allowedRoles.includes(userRole)){
+          showStatus(
+            "Akses ditolak untuk akun:\n" +
+            (data.email || "(unknown)") +
+            "\nRole: " + userRole +
+            "\nHubungi admin untuk akses.",
+            true
+          );
+          try { await auth.signOut(); } catch(e) {}
+          return;
+        }
 
-  // CEK ROLE
-  const allowedOrder = ["operator","supervisor","admin"];
-  const roleNow = (data.role || "guest").toLowerCase();
-  const canGoIn = allowedOrder.indexOf(roleNow) !== -1;
-  if (!canGoIn){
-    showStatus(
-      "Akses ditolak untuk akun:\n" +
-      (data.email || "(unknown)") +
-      "\nRole: " + data.role +
-      "\nHubungi admin untuk akses.",
-      true
-    );
-    return;
-  }
+        // Minta username JIKA BELUM ADA
+        let uname = localStorage.getItem("losses_username");
+        if (!uname) {
+          uname = prompt("Masukkan nama Anda (Nama Pelapor):", user.displayName || "");
+          if (uname && uname.trim().length > 0) {
+            localStorage.setItem("losses_username", uname.trim());
+          } else {
+            showStatus("Nama Pelapor wajib diisi untuk lanjut.", true);
+            try { await auth.signOut(); } catch(e) {}
+            return;
+          }
+        }
+        
+        // Lanjut ke app
+        showStatus("Akses diberikan. Masuk...", false);
+        window.location.href = "app.html";
 
-  // === NEW: minta username personal jika belum ada ===
-  let uname = localStorage.getItem("losses_username");
-  if (!uname) {
-    uname = prompt("Masukkan nama Anda (Pelapor):");
-    if (uname) {
-      uname = uname.trim();
-      if (uname.length === 0) {
-        uname = null;
+      } catch (err) {
+        console.error("Fetch error:", err);
+        showStatus("Error terhubung ke server. Cek konsol.", true);
       }
     }
-    if (!uname) {
-      // user cancel / kosong → kita stop, supaya jelas siapa pelapornya
-      showStatus("Nama Pelapor wajib diisi untuk lanjut.", true);
-      return;
-    }
-    localStorage.setItem("losses_username", uname);
-  }
-
-  // lanjut ke app
-  showStatus("Akses diberikan. Masuk...", false);
-  window.location.href = "app.html";
-}
-
-
 
     function showStatus(msg, isError){
       const box = document.getElementById("status");
