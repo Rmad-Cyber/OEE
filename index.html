@@ -171,7 +171,8 @@
     const auth = firebase.auth();
 
     // URL Apps Script Web App (/exec)
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec";
+    // Ganti WEBAPP_URL (saat dev, biarkan localhost):
+  const WEBAPP_URL = "https://oee-api-839375767453.asia-southeast2.run.app"; // Setelah deploy Cloud Run, ubah ke: https://your-cloud-run-url.run.app
 
     // kalau sudah login sebelumnya, cek role langsung
     auth.onAuthStateChanged(async function(user) {
@@ -195,7 +196,7 @@
 
 async function afterLoginCheck(user){
   const token = await user.getIdToken(true);
-  const url = WEBAPP_URL + "?action=whoami&token=" + encodeURIComponent(token);
+  const url = WEBAPP_URL + "/whoami?token=" + encodeURIComponent(token);
   const res = await fetch(url);
   const data = await res.json();
 

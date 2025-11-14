@@ -4,7 +4,10 @@
 
   const STORAGE_KEY = "oee_local_offline_log";
   const MODE_KEY = "oee_mode"; // 'SAFE' or 'ONLINE'
-  const DEFAULT_MODE = "SAFE";
+  const DEFAULT_MODE = "ONLINE";
+  // pastikan mode selalu ONLINE
+  let currentMode = "ONLINE";
+  localStorage.setItem(MODE_KEY, currentMode);
 
   const firebaseConfig = {
     apiKey: "AIzaSyBXZzlGWEICRgxBp5RUO78E7Jp2nwvpDsg",
@@ -16,7 +19,7 @@
     measurementId: "G-ZCG384P9G7"
   };
 
-  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzCyTnL6icp_zYFANUgG5WlyntFcUOSlMsgNILYQLt2hGzw5sxNn0zNV_qtrVIcPg/exec";
+  const WEBAPP_URL = "https://oee-api-839375767453.asia-southeast2.run.app"; // Sesuaikan saat deploy
   const MIN_ROLE_APP = ["operator","supervisor","admin"];
 
   const qs  = (id)  => document.getElementById(id);
@@ -25,7 +28,6 @@
 
   let auth = null;
   let currentRole = "guest";
-  let currentMode = localStorage.getItem(MODE_KEY) || DEFAULT_MODE;
 
   function showToast(type, msg){
     const el = type === 'success' ? qs('toast-success') : qs('toast-error');
@@ -80,31 +82,26 @@
   }
 
   function changeUsername(){
-    const cur = localStorage.getItem('losses_username') || '';
-    const nu = window.prompt('Nama pelapor baru?', cur);
-    if(!nu) return;
-    const cleaned = nu.trim();
-    if(!cleaned){ showToast('error','Nama tidak boleh kosong.'); return; }
-    localStorage.setItem('losses_username', cleaned);
-    refreshHeaderInfo();
-    const pf = qs('fPelapor');
-    if(pf) pf.value = cleaned;
-    showToast('success','Nama pelapor diperbarui.');
+    showChangeUserModal();
   }
 
   function refreshHeaderInfo(){
-    const uname = localStorage.getItem('losses_username') || '(Belum set nama)';
+    const userName = localStorage.getItem('losses_username') || '(Belum set nama)';
+    const userEmail = localStorage.getItem('losses_email') || '';
+    const userRole = localStorage.getItem('losses_role') || 'guest';
+    
     const nameEl = qs('sidebarUserName');
-    if(nameEl) nameEl.textContent = uname;
-    const pf = qs('fPelapor');
-    if(pf) pf.value = (uname === '(Belum set nama)') ? '' : uname;
-
-    const modeEl = qs('mode-value');
-    if(modeEl){
-      modeEl.textContent = currentMode;
-      modeEl.classList.toggle('text-green-700', currentMode === 'SAFE');
-      modeEl.classList.toggle('text-blue-700', currentMode === 'ONLINE');
+    const emailEl = qs('sidebarUserEmail');
+    const roleEl = qs('sidebarUserRole');
+    const pelapor = qs('fPelapor');
+    
+    if (nameEl) nameEl.textContent = userName;
+    if (emailEl) emailEl.textContent = userEmail;
+    if (roleEl) {
+      roleEl.textContent = userRole;
+      currentRole = userRole;
     }
+    if (pelapor) pelapor.value = userName;
   }
 
   function diffMinutes(s,f){
@@ -163,6 +160,7 @@
     const token = await u.getIdToken(true);
     const res = await fetch(WEBAPP_URL + "?action=create_losses", {
       method:"POST",
+      mode: 'cors', // important
       headers:{"Content-Type":"text/plain"},
       body: JSON.stringify({ token, data: payload })
     });
@@ -418,7 +416,194 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', function(){
+  // sinkronisasi data login dari index.html (url ?email=...&name=...)
+  function syncLoginFromIndex(){
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const email = (params.get('email') || params.get('e') || '').trim();
+      const name  = (params.get('name')  || params.get('username') || '').trim();
+      if(email) localStorage.setItem('losses_email', email);
+      if(name)  localStorage.setItem('losses_username', name);
+    } catch (err) {
+      console.warn('syncLoginFromIndex:', err);
+    }
+  }
+
+  async function validateUserFromDatabase(){
+    const userName = localStorage.getItem('losses_username') || '';
+    const userEmail = localStorage.getItem('losses_email') || '';
+
+    // jika email belum ada -> paksa input email+name
+    if(!userEmail){
+      showChangeUserModal('');
+      return false;
+    }
+
+    // jika nama belum ada -> minta username (email sudah tersedia)
+    if(!userName){
+      showChangeUserModal(userEmail);
+      return false;
+    }
+
+    // cek ke server secara tegas (JANGAN fallback ke allow)
+    try {
+      const resp = await fetch(WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'checkUserExists', email: userEmail, name: userName })
+      });
+      const j = await resp.json();
+      
+      // jika response tidak ok atau tidak valid
+      if(!j || !j.ok) {
+        showToast('error','Gagal validasi user, coba lagi');
+        showChangeUserModal(userEmail);
+        return false;
+      }
+      
+      // jika user tidak ada di database
+      if(!j.exists){
+        showToast('error','User tidak terdaftar atau nama tidak cocok');
+        showChangeUserModal(userEmail);
+        return false;
+      }
+      
+      // valid user -> simpan role jika ada dan lanjut
+      if(j.role) localStorage.setItem('losses_role', j.role);
+      return true;
+    } catch (err) {
+      console.error('validateUserFromDatabase fetch error:', err);
+      showToast('error','Tidak dapat menghubungi server, periksa koneksi');
+      showChangeUserModal(userEmail);
+      return false;  // JANGAN return true di sini!
+    }
+  }
+
+  function showChangeUserModal(prefillEmail = ''){
+    // Hapus modal lama jika ada
+    const oldModal = qs('user-modal-overlay');
+    if(oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+    modal.id = 'user-modal-overlay';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Verifikasi Data Pelapor</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" id="modalUserEmail" class="input w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="user@example.com" value="${prefillEmail}" ${prefillEmail ? 'disabled' : ''} />
+            <p id="emailError" class="text-xs text-red-500 mt-1 hidden"></p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nama Pelapor</label>
+            <input type="text" id="modalUserName" class="input w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Nama lengkap" />
+            <p id="nameError" class="text-xs text-red-500 mt-1 hidden"></p>
+          </div>
+          <button id="modalSubmitBtn" class="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700">Simpan & Masuk</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const submitBtn = qs('modalSubmitBtn');
+    const nameInput = qs('modalUserName');
+    const emailInput = qs('modalUserEmail');
+    const nameError = qs('nameError');
+    const emailError = qs('emailError');
+    
+    submitBtn.addEventListener('click', async () => {
+      const name = nameInput.value.trim();
+      const email = prefillEmail || emailInput.value.trim();
+      
+      // Reset error messages
+      nameError.classList.add('hidden');
+      emailError.classList.add('hidden');
+      nameError.textContent = '';
+      emailError.textContent = '';
+      
+      // Validasi
+      if(!name){
+        nameError.textContent = 'Nama pelapor harus diisi';
+        nameError.classList.remove('hidden');
+        return;
+      }
+      
+      if(!email){
+        emailError.textContent = 'Email harus diisi';
+        emailError.classList.remove('hidden');
+        return;
+      }
+      
+      if(!email.includes('@')){
+        emailError.textContent = 'Format email tidak valid';
+        emailError.classList.remove('hidden');
+        return;
+      }
+      
+      // Cek user ke database
+      try {
+        const response = await fetch(WEBAPP_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'checkUserExists',
+            email: email,
+            name: name
+          })
+        });
+        
+        const result = await response.json();
+        
+        if(!result.exists){
+          nameError.textContent = 'Username tidak terdaftar di sistem';
+          nameError.classList.remove('hidden');
+          nameInput.value = ''; // Kosongkan field username
+          return;
+        }
+        
+        // Simpan ke localStorage
+        localStorage.setItem('losses_username', name);
+        localStorage.setItem('losses_email', email);
+        localStorage.setItem('losses_role', result.role || 'operator');
+        
+        modal.remove();
+        refreshHeaderInfo();
+        showToast('success', 'Data pelapor berhasil disimpan');
+        
+        // Reload tab content jika sudah di app.html
+        if(window.location.pathname.includes('app.html')){
+          renderMyLog();
+          applyAllFilters();
+          updateChartsFromRows(getAllLocal());
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        nameError.textContent = 'Gagal validasi user: ' + err.message;
+        nameError.classList.remove('hidden');
+      }
+    });
+    
+    // Focus ke field username
+    nameInput.focus();
+  }
+
+  document.addEventListener('DOMContentLoaded', async function(){
+    // sinkronisasi data dari index.html (jika ada)
+    if (typeof syncLoginFromIndex === 'function') syncLoginFromIndex();
+
+    // wajib validasi user - jika gagal, modal akan tampil dan init diblok
+    const userValid = (typeof validateUserFromDatabase === 'function') ? await validateUserFromDatabase() : false;
+    if(!userValid){
+      // stop inisialisasi jika user belum valid / belum terdaftar
+      return;
+    }
+
+    // set UI mode menjadi ONLINE dan sembunyikan toggle mode
+    const modeEl = qs('mode-value'); if(modeEl){ modeEl.textContent = 'ONLINE'; modeEl.className = 'font-medium text-green-700'; }
+    const toggle = qs('toggleModeBtn'); if(toggle){ toggle.style.display = 'none'; toggle.disabled = true; }
+
     const t = qs('fTanggal'); if(t) t.valueAsDate = new Date();
     refreshHeaderInfo();
 
@@ -432,15 +617,34 @@
     });
     switchTab('input');
 
-    const toggle = qs('toggleModeBtn');
-    if(toggle) toggle.addEventListener('click', handleToggleMode);
-
     const form = qs('loss-form'); if(form) form.addEventListener('submit', submitLoss);
     const s = qs('fStart'), f = qs('fFinish');
     if(s) s.addEventListener('input', computeDuration);
     if(f) f.addEventListener('input', computeDuration);
 
     const cu = qs('btnChangeUser'); if(cu) cu.addEventListener('click', changeUsername);
+
+    const lb = qs('logout-button');
+    if(lb){
+      lb.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          if(window.firebase && typeof firebase.auth === 'function'){
+            try { await ensureFirebase(); if(auth && typeof auth.signOut === 'function'){ await auth.signOut(); } else { await firebase.auth().signOut(); } } catch(_){/* ignore */ }
+          }
+          localStorage.removeItem('losses_username');
+          localStorage.removeItem('losses_email');
+          localStorage.removeItem('losses_role');
+          // clear mode too to force fresh login flow next time
+          localStorage.removeItem(MODE_KEY);
+          showToast('success','Berhasil logout');
+          setTimeout(()=> { location.href = './index.html'; }, 600);
+        } catch (err) {
+          console.error('Logout error:', err);
+          showToast('error','Gagal logout');
+        }
+      });
+    }
 
     const myA = qs('applyMyLogFilter'); if(myA) myA.addEventListener('click', renderMyLog);
     const myR = qs('refreshMyLog'); if(myR) myR.addEventListener('click', ()=>{ const d = qs('mySince'); if(d) d.value = ''; renderMyLog(); });

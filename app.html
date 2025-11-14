@@ -43,7 +43,7 @@
         <div class="min-w-0">
           <div id="sidebarUserName" class="font-medium text-lg truncate">(Belum set nama)</div>
           <div id="sidebarUserEmail" class="block text-sm text-blue-400 truncate"></div>
-          <div id="sidebarUserRole" class="text-[10px] text-gray-400 bg-gray-700/40 inline-block px-2 py-[2px] rounded mt-1 uppercase tracking-wide">guest</div>
+          <div id="sidebarUserRole" class="text-[10px] text-gray-400 bg-gray-700/40 inline-block px-2 py-[2px] rounded mt-1 uppercase tracking-wide">operator</div>
           <button id="btnChangeUser" class="mt-2 w-full rounded-lg bg-gray-700/50 text-[11px] text-gray-200 py-1.5 hover:bg-gray-700">Ganti Nama Pelapor</button>
         </div>
       </div>
@@ -58,16 +58,49 @@
         <span>Dasbor</span>
       </button>
       <button data-tab="mylog" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+        <svg 
+          class="w-5 h-5 mr-3" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24" 
+          stroke-width="2" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <circle cx="12" cy="13" r="3"></circle>
+          <path d="M10 19v-1a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1"></path>
+        </svg>
         <span>My Log</span>
       </button>
+
       <button data-tab="alllog" class="sidebar-nav-button w-full flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        <svg 
+          class="w-5 h-5 mr-3" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24" 
+          stroke-width="2" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <line x1="10" y1="9" x2="8" y2="9"></line>
+        </svg>
         <span>All Log</span>
       </button>
     </nav>
     <div class="p-4 border-t border-gray-700">
-      <button id="logout-button" class="w-full flex items-center px-4 py-3 rounded-md text-red-400 hover:bg-red-800 hover:text-white"><span>Log Out</span></button>
+      <button id="logout-button" class="w-full flex items-center px-4 py-3 rounded-md text-red-400 hover:bg-red-800 hover:text-white">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        <span>Log Out</span>
+      </button>
     </div>
   </aside>
 
@@ -175,8 +208,8 @@
                 <label for="mySince" class="text-sm text-gray-700">Sejak</label>
                 <input type="date" id="mySince" class="input" />
                 <button id="applyMyLogFilter" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">Terapkan</button>
-                <button id="refreshMyLog" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">🔄 Refresh</button>
                 <button id="downloadMyLogCsv" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">⬇️ CSV</button>
+                <button id="refreshMyLog" class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200">🔄 Refresh</button>
               </div>
             </div>
             <p class="text-sm text-gray-500 mb-3">Menampilkan data sesuai nama pelapor di sidebar.</p>
